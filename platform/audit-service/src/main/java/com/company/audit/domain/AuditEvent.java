@@ -34,7 +34,9 @@ public class AuditEvent {
 
     private String correlationId;
 
-    @Lob
+    // No @Lob: on PostgreSQL, @Lob + String maps to the `oid` large-object
+    // type by default, not `text` — a plain String column matches the
+    // documented TEXT DDL correctly.
     @Column(nullable = false)
     private String rawPayload;
 
