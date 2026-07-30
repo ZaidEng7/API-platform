@@ -474,3 +474,96 @@ jobs:
           kubectl get pods -o wide
           kubectl describe pod -l app.kubernetes.io/name=gateway
           kubectl logs -l app.kubernetes.io/name=gateway --tail=200 || true
+
+  container-scan-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: gateway
+            module: gateway
+            jar: gateway-1.0.0-SNAPSHOT.jar
+          - service: customer-service
+            module: services/customer-service
+            jar: customer-service-1.0.0-SNAPSHOT.jar
+          - service: audit-service
+            module: platform/audit-service
+            jar: audit-service-1.0.0-SNAPSHOT.jar
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          docker build --build-arg MODULE=${{ matrix.module }} --build-arg JAR_NAME=${{ matrix.jar }} \
+            -t ${{ matrix.service }}:${{ github.sha }} .
+
+      - name: Scan with Trivy (fails on CRITICAL vulnerabilities with a known fix)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.service }}:${{ github.sha }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Compute lowercase registry path
+        id: vars
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push to GHCR
+        if: github.ref == 'refs/heads/main'
+        run: |
+          IMAGE="ghcr.io/${{ steps.vars.outputs.owner }}/api-platform-${{ matrix.service }}"
+          docker tag ${{ matrix.service }}:${{ github.sha }} "$IMAGE:${{ github.sha }}"
+          docker tag ${{ matrix.service }}:${{ github.sha }} "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+
+  sonar-quality-gate:
+    runs-on: ubuntu-latest
+    # Skipped entirely until SONAR_TOKEN is configured (guide's Phase 2 tooling
+    # decision on the log stack is unratified; a SonarCloud account/token is a
+    # similar external-setup dependency this pipeline can't provision itself —
+    # see docs/roadmap.md). Once set, this activates with no other changes needed.
+    if: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -q -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'ZaidEng7_API-platform' }} \
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=https://sonarcloud.io
