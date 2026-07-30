@@ -21,6 +21,10 @@
   <properties>
     <java.version>21</java.version>
     <mapstruct.version>1.6.2</mapstruct.version>
+    <!-- CVE-2025-24813 (critical RCE/info-disclosure) in the Tomcat version
+         Spring Boot 3.3.4 manages by default — override via the property
+         spring-boot-dependencies itself uses to template it. -->
+    <tomcat.version>10.1.35</tomcat.version>
   </properties>
 
   <dependencyManagement>

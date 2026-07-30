@@ -32,6 +32,15 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- CVE-2025-14813 (critical) in the BouncyCastle version pulled in
+           transitively (via OAuth2 resource server JWT handling) — pin to a
+           fixed release. Not our own dependency, so it needs an explicit
+           override rather than a property. -->
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>1.84</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
