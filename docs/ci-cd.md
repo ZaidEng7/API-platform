@@ -20,9 +20,10 @@ Plus the environment-specific smoke tests built alongside each Phase 3 increment
 - **Sonar quality gate** — needs a SonarCloud account linked to this repo (SonarCloud is free for public repos). Once you have it:
   1. Add repo secret `SONAR_TOKEN`.
   2. Add repo variable `SONAR_ORGANIZATION` (your SonarCloud org key).
-  3. Optionally add repo variable `SONAR_PROJECT_KEY` (defaults to `ZaidEng7_API-platform` if unset).
+  3. Add repo variable `SONAR_ENABLED` = `true` — this is the actual on/off switch (GitHub Actions doesn't allow the `secrets` context in a job-level `if:` condition, so the gate has to be a plain variable rather than checking `SONAR_TOKEN` directly).
+  4. Optionally add repo variable `SONAR_PROJECT_KEY` (defaults to `ZaidEng7_API-platform` if unset).
 
-  The job is already gated on `SONAR_TOKEN` being present — it'll start running with no other changes once you've done the above. I can't create the SonarCloud account or generate that token myself.
+  The job is already gated on `SONAR_ENABLED == 'true'` — it'll start running with no other changes once you've done the above. I can't create the SonarCloud account or generate that token myself.
 
 ## What's not built yet, and why
 

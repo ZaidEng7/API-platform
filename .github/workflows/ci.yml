@@ -534,11 +534,13 @@ jobs:
 
   sonar-quality-gate:
     runs-on: ubuntu-latest
-    # Skipped entirely until SONAR_TOKEN is configured (guide's Phase 2 tooling
-    # decision on the log stack is unratified; a SonarCloud account/token is a
-    # similar external-setup dependency this pipeline can't provision itself —
-    # see docs/roadmap.md). Once set, this activates with no other changes needed.
-    if: ${{ secrets.SONAR_TOKEN != '' }}
+    # Skipped entirely until SONAR_ENABLED=true is set as a repo variable
+    # (gated on `vars`, not `secrets` — the `secrets` context isn't allowed in
+    # job-level `if:` conditions). Set this alongside the SONAR_TOKEN secret
+    # and SONAR_ORGANIZATION variable — see docs/ci-cd.md. A SonarCloud
+    # account/token is an external-setup dependency this pipeline can't
+    # provision itself.
+    if: ${{ vars.SONAR_ENABLED == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
