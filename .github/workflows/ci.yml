@@ -138,3 +138,82 @@ jobs:
         run: |
           kill "$(cat gateway.pid)" 2>/dev/null || true
           docker compose -f platform/identity/docker-compose.yml down
+
+  metrics-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build gateway
+        run: mvn -q -pl gateway -am -DskipTests package
+
+      - name: Start gateway
+        run: |
+          nohup java -jar gateway/target/gateway-1.0.0-SNAPSHOT.jar > gateway.log 2>&1 &
+          echo $! > gateway.pid
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/actuator/health > /dev/null; then
+              echo "Gateway ready"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Verify /actuator/prometheus is served
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/prometheus)
+          test "$status" = "200"
+
+      - name: Start Prometheus and Grafana
+        run: docker compose -f deployment/docker/observability.yml up -d
+
+      - name: Wait for Prometheus to scrape the gateway
+        run: |
+          for i in $(seq 1 20); do
+            health=$(curl -sf http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="gateway"}' \
+              | jq -r '.data.result[0].value[1]' 2>/dev/null || echo "")
+            if [ "$health" = "1" ]; then
+              echo "Prometheus target up"
+              break
+            fi
+            echo "Waiting for Prometheus scrape... ($i/20)"
+            sleep 5
+          done
+          test "$health" = "1"
+
+      - name: Verify a real gateway metric flowed into Prometheus
+        run: |
+          value=$(curl -sf http://localhost:9090/api/v1/query --data-urlencode 'query=process_uptime_seconds{job="gateway"}' \
+            | jq -r '.data.result[0].value[1]')
+          echo "process_uptime_seconds=$value"
+          awk -v v="$value" 'BEGIN { exit !(v > 0) }'
+
+      - name: Verify Grafana is up with the Prometheus datasource provisioned
+        run: |
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:3000/api/health > /dev/null; then
+              break
+            fi
+            sleep 3
+          done
+          curl -sf -u admin:admin http://localhost:3000/api/datasources | jq -e '.[] | select(.type == "prometheus")' > /dev/null
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          cat gateway.log || true
+          docker compose -f deployment/docker/observability.yml logs
+
+      - name: Tear down
+        if: always()
+        run: |
+          kill "$(cat gateway.pid)" 2>/dev/null || true
+          docker compose -f deployment/docker/observability.yml down
