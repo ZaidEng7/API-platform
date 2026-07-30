@@ -53,11 +53,11 @@ Inventory every existing product (stack, owner, DB, APIs, auth, dependencies, co
 - [x] Shared `platform-bom` (Maven BOM) — Spring Boot 3.x, Java 21, Resilience4j, MapStruct, Flyway, springdoc-openapi versions pinned
 - [x] **Walking-skeleton Customer Service** — layered Spring Boot shell (api/application/domain/infrastructure), `POST`/`GET /api/v1/customers`, RFC 7807 error handling, Flyway baseline migration, `/actuator/health`, springdoc OpenAPI UI
 - [x] Gateway shell (Spring Cloud Gateway) — routes to Customer Service, correlation-ID filter (generate/propagate `X-Correlation-Id`), explicit CORS allow-list
-- [ ] `shared/common-web` — Problem Details error handling, standard response envelope (currently duplicated inline in customer-service; extract once a second service needs it)
-- [ ] `shared/common-security` — JWT validation helpers, permission checks
-- [ ] `shared/common-logging` — structured JSON logging + mandatory field masking
-- [ ] `shared/common-messaging` — outbox pattern, idempotent-consumer support, event envelope
-- [ ] `shared/common-test` — Testcontainers base classes, fixtures (needed for real integration tests — current tests are placeholders)
+- [x] `shared/common-web` — Problem Details error handling (`ApiException` + `GlobalExceptionHandler`), `ApiResponse`/`PageMeta` envelope, `CorrelationIdFilter` (MDC), auto-configured via Spring Boot autoconfiguration; customer-service refactored to depend on it
+- [x] `shared/common-security` — JWT resource-server auto-config (inactive until issuer-uri configured), `KeycloakRealmRoleConverter`, `CurrentUser` helper, `@EnableMethodSecurity`
+- [x] `shared/common-logging` — JSON logging (`logstash-logback-encoder`), mandatory masking of named sensitive fields + IBAN/PAN-shaped values in free text, auto-discovered `logback-spring.xml`; wired into customer-service
+- [x] `shared/common-messaging` — `OutboxEventStore`/`OutboxRelayPublisher` (outbox pattern, §8.4), `IdempotencyGuard` (dedupe on eventId, §22), `EventEnvelope<T>`. Not yet wired into customer-service — no domain event to publish yet, that lands when a service actually needs one
+- [x] `shared/common-test` — `AbstractPostgresIntegrationTest`/`AbstractMessagingIntegrationTest` (Testcontainers singleton-container pattern). Wired into customer-service (real Postgres + Flyway + full HTTP round-trip via MockMvc) and gateway (real routing + correlation-ID propagation against a stub backend, no Docker needed there)
 - [ ] Identity — Keycloak realm config-as-code (`platform/identity/`), clients, roles, AD/LDAP federation placeholder; wire JWT validation into Gateway
 - [ ] Audit Service — immutable event store, outbox-driven writes (§13)
 - [ ] Logging/metrics/tracing stack — ELK or OpenSearch (per Phase 2 decision), Prometheus + Grafana, OpenTelemetry → Jaeger/Tempo

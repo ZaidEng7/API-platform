@@ -4,8 +4,8 @@ import com.company.customer.api.dto.CreateCustomerRequest;
 import com.company.customer.api.dto.CustomerResponse;
 import com.company.customer.api.mapper.CustomerMapper;
 import com.company.customer.application.CustomerApplicationService;
+import com.company.platform.web.response.ApiResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,15 +25,15 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    public CustomerResponse getById(@PathVariable UUID id) {
-        return customerMapper.toResponse(customerApplicationService.getById(id));
+    public ApiResponse<CustomerResponse> getById(@PathVariable UUID id) {
+        return ApiResponse.of(customerMapper.toResponse(customerApplicationService.getById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CreateCustomerRequest request) {
+    public ResponseEntity<ApiResponse<CustomerResponse>> create(@Valid @RequestBody CreateCustomerRequest request) {
         var customer = customerApplicationService.create(request.fullName(), request.email());
         var response = customerMapper.toResponse(customer);
         return ResponseEntity.created(URI.create("/api/v1/customers/" + response.id()))
-                .body(response);
+                .body(ApiResponse.of(response));
     }
 }

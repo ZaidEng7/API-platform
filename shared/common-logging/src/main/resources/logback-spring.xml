@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Structured JSON console logging, auto-discovered by Spring Boot's
+  LoggingSystem for any service that depends on this module (guide §14).
+  MDC (including correlationId, set by common-web's CorrelationIdFilter or
+  the Gateway) is included automatically by LogstashEncoder.
+
+  Masking (guide §14: "Never logged: passwords, tokens, full national IDs,
+  full IBANs, card data, document contents. Masking is enforced by the
+  shared logging library, not by developer discipline"):
+    - <path> fully masks the value of a field with that name, wherever it
+      appears as structured JSON (e.g. via StructuredArguments/markers).
+    - <valueMask> scans string field values (including free-text log
+      messages) for a regex match and masks it in place — this is the net
+      that catches IBANs/PANs embedded in a message string rather than
+      logged as a named field.
+-->
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</timestampPattern>
+            <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <path>password</path>
+                <path>token</path>
+                <path>accessToken</path>
+                <path>refreshToken</path>
+                <path>secret</path>
+                <path>apiKey</path>
+                <path>authorization</path>
+                <path>nationalId</path>
+                <path>iban</path>
+                <path>cardNumber</path>
+                <path>cvv</path>
+
+                <!-- IBAN-shaped value embedded in free text, e.g. a log message -->
+                <valueMask>
+                    <value>\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b</value>
+                </valueMask>
+                <!-- Card-PAN-shaped digit run (13-19 digits, optionally spaced/dashed) -->
+                <valueMask>
+                    <value>\b(?:\d[ -]?){13,19}\b</value>
+                </valueMask>
+
+                <defaultMask>***MASKED***</defaultMask>
+            </jsonGeneratorDecorator>
+        </encoder>
+    </appender>
+
+    <root level="${LOG_LEVEL_ROOT:-INFO}">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <logger name="com.company" level="${LOG_LEVEL_APP:-INFO}"/>
+
+</configuration>
