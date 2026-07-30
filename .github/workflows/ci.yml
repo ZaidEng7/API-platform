@@ -292,3 +292,87 @@ jobs:
         run: |
           kill "$(cat gateway.pid)" 2>/dev/null || true
           docker compose -f deployment/docker/observability.yml down
+
+  logging-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Start OpenSearch and OpenSearch Dashboards
+        run: docker compose -f deployment/docker/observability.yml up -d opensearch opensearch-dashboards
+
+      - name: Wait for OpenSearch cluster health
+        run: |
+          for i in $(seq 1 30); do
+            status=$(curl -sf "http://localhost:9200/_cluster/health" | jq -r '.status' 2>/dev/null || echo "")
+            if [ "$status" = "green" ] || [ "$status" = "yellow" ]; then
+              echo "OpenSearch cluster status: $status"
+              break
+            fi
+            echo "Waiting for OpenSearch... ($i/30)"
+            sleep 3
+          done
+          test "$status" = "green" -o "$status" = "yellow"
+
+      - name: Index and search a document (proves OpenSearch actually ingests, not just boots)
+        run: |
+          set -e
+          curl -sf -X PUT "http://localhost:9200/ci-smoke-test/_doc/1" \
+            -H 'Content-Type: application/json' \
+            -d '{"message": "hello from ci", "service": "smoke-test"}'
+          curl -sf -X POST "http://localhost:9200/ci-smoke-test/_refresh"
+          hits=$(curl -sf "http://localhost:9200/ci-smoke-test/_search" \
+            -H 'Content-Type: application/json' \
+            -d '{"query": {"match": {"service": "smoke-test"}}}' | jq '.hits.total.value')
+          echo "hits=$hits"
+          test "$hits" = "1"
+
+      - name: Verify OpenSearch Dashboards is reachable
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5601/api/status > /dev/null; then
+              echo "Dashboards ready"
+              break
+            fi
+            sleep 3
+          done
+          curl -sf http://localhost:5601/api/status > /dev/null
+
+      - name: Build gateway
+        run: mvn -q -pl gateway -am -DskipTests package
+
+      - name: Start gateway and verify it writes masked JSON logs to file
+        run: |
+          rm -rf logs
+          LOG_FILE_NAME=logs/gateway.log \
+            nohup java -jar gateway/target/gateway-1.0.0-SNAPSHOT.jar > gateway-console.log 2>&1 &
+          echo $! > gateway.pid
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/actuator/health > /dev/null; then
+              echo "Gateway ready"
+              break
+            fi
+            sleep 2
+          done
+          test -f logs/gateway.log
+          jq -e '.message and .["@timestamp"] and .level' logs/gateway.log | tail -1 > /dev/null
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          cat gateway-console.log || true
+          docker compose -f deployment/docker/observability.yml logs opensearch opensearch-dashboards
+
+      - name: Tear down
+        if: always()
+        run: |
+          kill "$(cat gateway.pid)" 2>/dev/null || true
+          docker compose -f deployment/docker/observability.yml down
