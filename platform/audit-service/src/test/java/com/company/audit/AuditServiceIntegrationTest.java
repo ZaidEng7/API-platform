@@ -41,7 +41,11 @@ class AuditServiceIntegrationTest extends AbstractMessagingIntegrationTest {
         publish(eventId, routingKey, payload);
         publish(eventId, routingKey, payload); // redelivery — must be deduped, not double-recorded
 
-        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
+        // pollInSameThread(): Awaitility polls on a background thread by
+        // default, where SecurityContextHolder's ThreadLocal wouldn't see
+        // @WithMockUser's authentication (set on the test thread) — the
+        // request would look anonymous and get a false-negative 403.
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
             var result = mockMvc.perform(get("/api/v1/audit-events").param("eventType", routingKey))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.length()").value(1))
