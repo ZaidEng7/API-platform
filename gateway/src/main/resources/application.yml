@@ -17,6 +17,13 @@ spring:
             allowedMethods: [GET, POST, PUT, PATCH, DELETE]
             allowedHeaders: [Authorization, Content-Type, X-Correlation-Id]
             allowCredentials: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Empty by default: SecurityConfig stays fully open until this is set
+          # (see platform/identity/README.md to point it at a local Keycloak).
+          issuer-uri: ${GATEWAY_JWT_ISSUER_URI:}
 
 server:
   port: ${SERVER_PORT:8080}

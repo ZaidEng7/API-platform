@@ -33,3 +33,108 @@ jobs:
           name: surefire-reports
           path: '**/target/surefire-reports/*.xml'
           if-no-files-found: ignore
+
+  identity-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Start Keycloak
+        run: docker compose -f platform/identity/docker-compose.yml up -d
+
+      - name: Wait for realm import
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8082/realms/company/.well-known/openid-configuration -o /tmp/oidc.json; then
+              echo "Keycloak realm ready"
+              break
+            fi
+            echo "Waiting for Keycloak... ($i/60)"
+            sleep 5
+          done
+          test -s /tmp/oidc.json
+
+      - name: Show Keycloak logs
+        if: always()
+        run: docker compose -f platform/identity/docker-compose.yml logs keycloak
+
+      - name: Verify realm issuer and service-account token roles
+        run: |
+          set -e
+          issuer=$(jq -r '.issuer' /tmp/oidc.json)
+          echo "issuer=$issuer"
+          echo "$issuer" | grep -q "/realms/company"
+
+          b64url_decode() {
+            local input="${1//_/\/}"
+            input="${input//-/+}"
+            case $(( ${#input} % 4 )) in
+              2) input="${input}==" ;;
+              3) input="${input}=" ;;
+            esac
+            echo "$input" | base64 -d
+          }
+
+          token_endpoint=$(jq -r '.token_endpoint' /tmp/oidc.json)
+          token=$(curl -sf -X POST "$token_endpoint" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=api-platform-services" \
+            -d "client_secret=local-dev-only-not-a-real-secret" \
+            | jq -r '.access_token')
+          test -n "$token" && test "$token" != "null"
+
+          payload=$(b64url_decode "$(echo "$token" | cut -d. -f2)")
+          echo "$payload" | jq -e '.realm_access.roles | index("operations")' > /dev/null
+          echo "Token issuance + realm role mapping verified"
+
+      - name: Build gateway
+        run: mvn -q -pl gateway -am -DskipTests package
+
+      - name: Start gateway with JWT enforcement enabled
+        run: |
+          GATEWAY_JWT_ISSUER_URI=http://localhost:8082/realms/company \
+            nohup java -jar gateway/target/gateway-1.0.0-SNAPSHOT.jar > gateway.log 2>&1 &
+          echo $! > gateway.pid
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/actuator/health > /dev/null; then
+              echo "Gateway ready"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Verify unauthenticated request is rejected
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/customers/anything)
+          echo "status=$status"
+          test "$status" = "401"
+
+      - name: Verify authenticated request passes the security filter
+        run: |
+          token=$(curl -sf -X POST "http://localhost:8082/realms/company/protocol/openid-connect/token" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=api-platform-services" \
+            -d "client_secret=local-dev-only-not-a-real-secret" \
+            | jq -r '.access_token')
+          status=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://localhost:8080/api/v1/customers/anything)
+          echo "status=$status"
+          test "$status" != "401"
+          test "$status" != "403"
+
+      - name: Show gateway logs on failure
+        if: failure()
+        run: cat gateway.log || true
+
+      - name: Tear down
+        if: always()
+        run: |
+          kill "$(cat gateway.pid)" 2>/dev/null || true
+          docker compose -f platform/identity/docker-compose.yml down
