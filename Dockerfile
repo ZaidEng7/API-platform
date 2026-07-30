@@ -29,7 +29,10 @@ RUN groupadd --system --gid 1000 appuser \
 
 WORKDIR /app
 COPY --from=build /workspace/${MODULE}/target/${JAR_NAME} app.jar
-RUN chown appuser:appuser app.jar
+# The whole directory, not just the jar: common-logging's RollingFileAppender
+# needs to create logs/ under the working directory at runtime, and the
+# non-root user below can't do that unless it owns the directory itself.
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
 
 USER appuser
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
