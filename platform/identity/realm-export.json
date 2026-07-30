@@ -1,0 +1,65 @@
+{
+  "realm": "company",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      { "name": "administrator", "description": "Full platform administration" },
+      { "name": "operations", "description": "Operations team — service accounts, on-call" },
+      { "name": "compliance", "description": "Compliance/AML/KYC review and sign-off" },
+      { "name": "portfolio-manager", "description": "Investment/portfolio management" },
+      { "name": "customer-service", "description": "Customer support representative" },
+      { "name": "auditor", "description": "Read-only access to audit records" },
+      { "name": "investor", "description": "End-customer investor" },
+      { "name": "partner", "description": "External partner integration" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "gateway-portal",
+      "name": "Web/Mobile Portal (public client)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "api-platform-services",
+      "name": "Service-to-service (confidential client)",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "local-dev-only-not-a-real-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-api-platform-services",
+      "serviceAccountClientId": "api-platform-services",
+      "enabled": true,
+      "realmRoles": ["operations"]
+    },
+    {
+      "username": "investor.test",
+      "email": "investor.test@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "test-password", "temporary": false }
+      ],
+      "realmRoles": ["investor"]
+    }
+  ],
+  "_comment_ad_ldap_federation": "User federation (AD/LDAP) is a Phase 1 input pending confirmation — see docs/roadmap.md 'Application inventory'. Once connection details (host, bind DN, user search base) are known, add a 'ldap' entry under components['org.keycloak.storage.UserStorageProvider'] here; do not hand-configure it in a running realm."
+}
