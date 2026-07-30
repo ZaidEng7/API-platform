@@ -41,5 +41,5 @@ management:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
 
 logging:
-  pattern:
-    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_NAME:logs/gateway.log}

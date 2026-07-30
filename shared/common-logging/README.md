@@ -11,11 +11,21 @@ Structured JSON console logging with mandatory field masking (guide §14). Auto-
 
 ## What it provides
 
-- JSON logs via `logstash-logback-encoder`, MDC fields (e.g. `correlationId` from `common-web`'s `CorrelationIdFilter`) included automatically.
+- JSON logs via `logstash-logback-encoder` to **both console and a rolling file** (100MB/file, 7 days, 1GB total cap), MDC fields (e.g. `correlationId` from `common-web`'s `CorrelationIdFilter`) included automatically.
 - **Masking, enforced at the encoder, not by developer discipline**:
   - Named fields always fully masked: `password`, `token`, `accessToken`, `refreshToken`, `secret`, `apiKey`, `authorization`, `nationalId`, `iban`, `cardNumber`, `cvv`.
   - Free-text log messages scanned for IBAN-shaped and card-PAN-shaped values and masked in place.
 - `LOG_LEVEL_ROOT` / `LOG_LEVEL_APP` env vars control root and `com.company.*` log levels (default `INFO`).
+
+## File output
+
+Set `logging.file.name` in your **own** `application.yml` (this module can't pick a sane default — every service sharing the same default path would collide when run together locally):
+
+```yaml
+logging:
+  file:
+    name: ${LOG_FILE_NAME:logs/your-service-name.log}
+```
 
 ## Usage gotcha: `v()` vs `kv()`
 
@@ -33,4 +43,4 @@ log.info("login attempt", v("password", secret));
 ## Known limitations
 
 - Value-regex masking for national IDs is intentionally not included as a standalone pattern (too generic a digit-shape to mask without false-positiving on order IDs, amounts, etc.) — always log `nationalId` as a **named field**, not string-concatenated into a message, so the path mask catches it.
-- No file/rolling appender yet — console-only, expected to be captured by the container runtime and shipped to ELK/OpenSearch (Phase 3, not yet stood up).
+- **No shipper wired up yet.** OpenSearch is stood up (`deployment/docker/observability.yml`) and services write JSON to disk, but nothing tails those files into it. Filebeat was considered and deliberately not used — recent Elastic Beats releases actively restrict compatibility with non-Elastic-licensed backends like OpenSearch, which is exactly the kind of integration risk not worth taking on without verifying it first. The real options (Data Prepper — OpenSearch's own ingestion pipeline, or Fluent Bit) need their own setup and are follow-up work; this is also entangled with the still-unratified Phase 2 "ELK vs OpenSearch" decision.

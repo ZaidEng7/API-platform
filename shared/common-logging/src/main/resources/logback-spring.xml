@@ -47,8 +47,52 @@
         </encoder>
     </appender>
 
+    <!--
+      Same JSON + masking as CONSOLE, written to disk so a node-level log
+      agent (Filebeat/Fluent Bit/Data Prepper — shipper choice not made
+      yet, see this module's README) can tail it. ${LOG_FILE} is populated
+      automatically by Spring Boot's LoggingSystem when a service sets
+      logging.file.name in its own application.yml — no <springProperty>
+      needed, which also matters here since this file is loaded directly
+      by JoranConfigurator (not full Spring Boot bootstrap) in this
+      module's own tests.
+    -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE:-logs/application.log}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE:-logs/application.log}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</timestampPattern>
+            <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <path>password</path>
+                <path>token</path>
+                <path>accessToken</path>
+                <path>refreshToken</path>
+                <path>secret</path>
+                <path>apiKey</path>
+                <path>authorization</path>
+                <path>nationalId</path>
+                <path>iban</path>
+                <path>cardNumber</path>
+                <path>cvv</path>
+                <valueMask>
+                    <value>\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b</value>
+                </valueMask>
+                <valueMask>
+                    <value>\b(?:\d[ -]?){13,19}\b</value>
+                </valueMask>
+                <defaultMask>***MASKED***</defaultMask>
+            </jsonGeneratorDecorator>
+        </encoder>
+    </appender>
+
     <root level="${LOG_LEVEL_ROOT:-INFO}">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
     </root>
 
     <logger name="com.company" level="${LOG_LEVEL_APP:-INFO}"/>
