@@ -55,7 +55,7 @@ Inventory every existing product (stack, owner, DB, APIs, auth, dependencies, co
 - [x] Gateway shell (Spring Cloud Gateway) — routes to Customer Service, correlation-ID filter (generate/propagate `X-Correlation-Id`), explicit CORS allow-list
 - [x] `shared/common-web` — Problem Details error handling (`ApiException` + `GlobalExceptionHandler`), `ApiResponse`/`PageMeta` envelope, `CorrelationIdFilter` (MDC), auto-configured via Spring Boot autoconfiguration; customer-service refactored to depend on it
 - [x] `shared/common-security` — JWT resource-server auto-config (inactive until issuer-uri configured), `KeycloakRealmRoleConverter`, `CurrentUser` helper, `@EnableMethodSecurity`
-- [ ] `shared/common-logging` — structured JSON logging + mandatory field masking
+- [x] `shared/common-logging` — JSON logging (`logstash-logback-encoder`), mandatory masking of named sensitive fields + IBAN/PAN-shaped values in free text, auto-discovered `logback-spring.xml`; wired into customer-service
 - [ ] `shared/common-messaging` — outbox pattern, idempotent-consumer support, event envelope
 - [ ] `shared/common-test` — Testcontainers base classes, fixtures (needed for real integration tests — current tests are placeholders)
 - [ ] Identity — Keycloak realm config-as-code (`platform/identity/`), clients, roles, AD/LDAP federation placeholder; wire JWT validation into Gateway

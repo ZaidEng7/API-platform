@@ -19,6 +19,7 @@
     <resilience4j.version>2.2.0</resilience4j.version>
     <mapstruct.version>1.6.2</mapstruct.version>
     <flyway.version>10.19.0</flyway.version>
+    <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
   </properties>
 
   <dependencyManagement>
@@ -67,6 +68,12 @@
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-database-postgresql</artifactId>
         <version>${flyway.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.logstash.logback</groupId>
+        <artifactId>logstash-logback-encoder</artifactId>
+        <version>${logstash-logback-encoder.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

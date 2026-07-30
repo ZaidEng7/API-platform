@@ -32,6 +32,7 @@
     <module>shared/platform-bom</module>
     <module>shared/common-web</module>
     <module>shared/common-security</module>
+    <module>shared/common-logging</module>
     <module>services/customer-service</module>
     <module>gateway</module>
   </modules>
