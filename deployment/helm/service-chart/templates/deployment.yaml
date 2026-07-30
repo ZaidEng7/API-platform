@@ -39,17 +39,26 @@ spec:
           envFrom:
             {{- toYaml .Values.envFrom | nindent 12 }}
           {{- end }}
+          # startupProbe gates liveness/readiness until the app is actually up —
+          # a JVM app under modest CPU limits (see values.yaml) can take well
+          # longer than a fixed initialDelaySeconds to start, and without this
+          # kubelet kills it mid-boot on a failed liveness check before it ever
+          # gets a chance to become ready.
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.readinessPath }}
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
           livenessProbe:
             httpGet:
               path: {{ .Values.probes.livenessPath }}
               port: http
-            initialDelaySeconds: 20
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: {{ .Values.probes.readinessPath }}
               port: http
-            initialDelaySeconds: 10
             periodSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
