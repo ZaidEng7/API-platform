@@ -1,0 +1,12 @@
+replicaCount: 1
+image:
+  tag: dev
+resources:
+  requests:
+    cpu: 50m
+    memory: 192Mi
+  limits:
+    cpu: 250m
+    memory: 384Mi
+autoscaling:
+  enabled: false

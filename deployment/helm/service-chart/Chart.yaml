@@ -1,0 +1,6 @@
+apiVersion: v2
+name: service-chart
+description: Generic Helm chart for any API Platform service (guide §17 — one chart pattern for all, parameterized via values rather than one chart per service)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

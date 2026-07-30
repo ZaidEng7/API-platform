@@ -1,0 +1,15 @@
+replicaCount: 2
+image:
+  tag: staging
+resources:
+  requests:
+    cpu: 150m
+    memory: 384Mi
+  limits:
+    cpu: 750m
+    memory: 768Mi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 80

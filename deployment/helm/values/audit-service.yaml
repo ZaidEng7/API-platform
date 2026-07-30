@@ -1,0 +1,27 @@
+# Service-specific values for Audit Service. See gateway.yaml for the
+# full install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: audit-service
+
+image:
+  repository: audit-service
+
+service:
+  port: 8083
+  targetPort: 8083
+
+env:
+  DB_HOST: audit-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: audit_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+
+envFrom:
+  - secretRef:
+      name: audit-service-db
+      optional: true
+  - secretRef:
+      name: audit-service-rabbitmq
+      optional: true

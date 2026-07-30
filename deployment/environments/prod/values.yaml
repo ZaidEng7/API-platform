@@ -1,0 +1,18 @@
+# No image.tag here on purpose: prod deploys must pass an explicit,
+# immutable tag (git SHA or semver) via --set at deploy time — a static
+# "prod" tag in this file would silently float to whatever was last
+# pushed under that name, defeating the point of pinning.
+
+replicaCount: 3
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

@@ -1,0 +1,13 @@
+.git
+.github
+docs
+deployment/docker
+deployment/environments
+deployment/helm
+**/target
+**/logs
+*.md
+.idea
+*.iml
+.vscode
+.DS_Store

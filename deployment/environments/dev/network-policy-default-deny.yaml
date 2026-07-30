@@ -1,0 +1,34 @@
+# Default-deny baseline (guide §5.3, §23: NetworkPolicies default-deny).
+# An empty podSelector with no ingress/egress rules blocks ALL traffic to
+# and from every pod in the namespace — anything that needs to actually
+# talk to something else needs its own explicit allow policy on top of
+# this. allow-dns-egress below is the one universal exception every pod
+# needs to function at all.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: api-platform-dev
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: api-platform-dev
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

@@ -376,3 +376,101 @@ jobs:
         run: |
           kill "$(cat gateway.pid)" 2>/dev/null || true
           docker compose -f deployment/docker/observability.yml down
+
+  k8s-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build Docker images for all three services
+        run: |
+          docker build --build-arg MODULE=gateway --build-arg JAR_NAME=gateway-1.0.0-SNAPSHOT.jar -t gateway:ci .
+          docker build --build-arg MODULE=services/customer-service --build-arg JAR_NAME=customer-service-1.0.0-SNAPSHOT.jar -t customer-service:ci .
+          docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service:ci .
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint the chart for every service and environment
+        run: |
+          for svc in gateway customer-service audit-service; do
+            for env in dev test staging prod; do
+              helm lint deployment/helm/service-chart \
+                -f deployment/helm/values/$svc.yaml \
+                -f deployment/environments/$env/values.yaml \
+                --set image.tag=ci
+            done
+          done
+
+      - name: Install kubeconform
+        run: |
+          curl -sL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Validate rendered manifests and namespace/NetworkPolicy YAML against real K8s schemas
+        run: |
+          set -e
+          for svc in gateway customer-service audit-service; do
+            for env in dev test staging prod; do
+              helm template $svc deployment/helm/service-chart \
+                -f deployment/helm/values/$svc.yaml \
+                -f deployment/environments/$env/values.yaml \
+                --set image.tag=ci \
+                | kubeconform -strict -summary
+            done
+          done
+          for env in dev test staging prod; do
+            kubeconform -strict -summary deployment/environments/$env/namespace.yaml deployment/environments/$env/network-policy-default-deny.yaml
+          done
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: ci
+
+      - name: Load the gateway image into kind
+        run: kind load docker-image gateway:ci --name ci
+
+      - name: Deploy the gateway chart to the live cluster
+        run: |
+          helm install gateway deployment/helm/service-chart \
+            -f deployment/helm/values/gateway.yaml \
+            -f deployment/environments/dev/values.yaml \
+            --set image.repository=gateway \
+            --set image.tag=ci \
+            --set image.pullPolicy=Never
+
+      - name: Wait for the pod to become Ready
+        run: kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=gateway --timeout=120s
+
+      - name: Verify the deployed service actually answers health checks
+        run: |
+          kubectl port-forward svc/gateway 18080:8080 &
+          PORT_FORWARD_PID=$!
+          status=""
+          for i in $(seq 1 15); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:18080/actuator/health 2>/dev/null || echo "")
+            if [ "$status" = "200" ]; then
+              echo "Reachable after $i attempt(s)"
+              break
+            fi
+            sleep 2
+          done
+          echo "status=$status"
+          kill $PORT_FORWARD_PID 2>/dev/null || true
+          test "$status" = "200"
+
+      - name: Show diagnostics on failure
+        if: failure()
+        run: |
+          kubectl get pods -o wide
+          kubectl describe pod -l app.kubernetes.io/name=gateway
+          kubectl logs -l app.kubernetes.io/name=gateway --tail=200 || true
