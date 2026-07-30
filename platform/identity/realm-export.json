@@ -60,6 +60,5 @@
       ],
       "realmRoles": ["investor"]
     }
-  ],
-  "_comment_ad_ldap_federation": "User federation (AD/LDAP) is a Phase 1 input pending confirmation — see docs/roadmap.md 'Application inventory'. Once connection details (host, bind DN, user search base) are known, add a 'ldap' entry under components['org.keycloak.storage.UserStorageProvider'] here; do not hand-configure it in a running realm."
+  ]
 }
