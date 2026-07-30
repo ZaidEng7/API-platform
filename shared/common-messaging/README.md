@@ -9,6 +9,16 @@ Outbox pattern, idempotent-consumer support, and the standard event envelope (gu
 </dependency>
 ```
 
+## Required: add `@EntityScan` to your `@SpringBootApplication` class
+
+This is not optional, and it's not something the autoconfiguration can do for you. This module's autoconfiguration declares `@EntityScan(basePackageClasses = {OutboxEvent.class, ProcessedEvent.class})` so its own entities are found — but the moment *any* `@EntityScan` exists anywhere in the context, Spring Boot's implicit "scan my own package" default turns off for the **whole application**, not just for this library. Without your own explicit `@EntityScan`, your service's own `@Entity` classes silently stop being managed types (`Not a managed type: class ...` at startup — found the hard way building Audit Service). Add:
+
+```java
+@SpringBootApplication
+@EntityScan(basePackageClasses = {YourEntity.class, OutboxEvent.class, ProcessedEvent.class})
+public class YourServiceApplication { ... }
+```
+
 ## Required DDL (add to your own service's Flyway migrations)
 
 Database-per-service (guide §8.2) means these tables live in the *owning* service's schema, not a shared one — this module ships the JPA mapping, not the migration:

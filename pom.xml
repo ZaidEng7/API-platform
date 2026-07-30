@@ -37,5 +37,6 @@
     <module>shared/common-test</module>
     <module>services/customer-service</module>
     <module>gateway</module>
+    <module>platform/audit-service</module>
   </modules>
 </project>
