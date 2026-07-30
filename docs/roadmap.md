@@ -54,7 +54,7 @@ Inventory every existing product (stack, owner, DB, APIs, auth, dependencies, co
 - [x] **Walking-skeleton Customer Service** — layered Spring Boot shell (api/application/domain/infrastructure), `POST`/`GET /api/v1/customers`, RFC 7807 error handling, Flyway baseline migration, `/actuator/health`, springdoc OpenAPI UI
 - [x] Gateway shell (Spring Cloud Gateway) — routes to Customer Service, correlation-ID filter (generate/propagate `X-Correlation-Id`), explicit CORS allow-list
 - [x] `shared/common-web` — Problem Details error handling (`ApiException` + `GlobalExceptionHandler`), `ApiResponse`/`PageMeta` envelope, `CorrelationIdFilter` (MDC), auto-configured via Spring Boot autoconfiguration; customer-service refactored to depend on it
-- [ ] `shared/common-security` — JWT validation helpers, permission checks
+- [x] `shared/common-security` — JWT resource-server auto-config (inactive until issuer-uri configured), `KeycloakRealmRoleConverter`, `CurrentUser` helper, `@EnableMethodSecurity`
 - [ ] `shared/common-logging` — structured JSON logging + mandatory field masking
 - [ ] `shared/common-messaging` — outbox pattern, idempotent-consumer support, event envelope
 - [ ] `shared/common-test` — Testcontainers base classes, fixtures (needed for real integration tests — current tests are placeholders)
