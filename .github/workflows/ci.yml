@@ -503,7 +503,7 @@ jobs:
             -t ${{ matrix.service }}:${{ github.sha }} .
 
       - name: Scan with Trivy (fails on CRITICAL vulnerabilities with a known fix)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: ${{ matrix.service }}:${{ github.sha }}
