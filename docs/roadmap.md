@@ -57,7 +57,7 @@ Inventory every existing product (stack, owner, DB, APIs, auth, dependencies, co
 - [x] `shared/common-security` — JWT resource-server auto-config (inactive until issuer-uri configured), `KeycloakRealmRoleConverter`, `CurrentUser` helper, `@EnableMethodSecurity`
 - [x] `shared/common-logging` — JSON logging (`logstash-logback-encoder`), mandatory masking of named sensitive fields + IBAN/PAN-shaped values in free text, auto-discovered `logback-spring.xml`; wired into customer-service
 - [x] `shared/common-messaging` — `OutboxEventStore`/`OutboxRelayPublisher` (outbox pattern, §8.4), `IdempotencyGuard` (dedupe on eventId, §22), `EventEnvelope<T>`. Not yet wired into customer-service — no domain event to publish yet, that lands when a service actually needs one
-- [ ] `shared/common-test` — Testcontainers base classes, fixtures (needed for real integration tests — current tests are placeholders)
+- [x] `shared/common-test` — `AbstractPostgresIntegrationTest`/`AbstractMessagingIntegrationTest` (Testcontainers singleton-container pattern). Wired into customer-service (real Postgres + Flyway + full HTTP round-trip via MockMvc) and gateway (real routing + correlation-ID propagation against a stub backend, no Docker needed there)
 - [ ] Identity — Keycloak realm config-as-code (`platform/identity/`), clients, roles, AD/LDAP federation placeholder; wire JWT validation into Gateway
 - [ ] Audit Service — immutable event store, outbox-driven writes (§13)
 - [ ] Logging/metrics/tracing stack — ELK or OpenSearch (per Phase 2 decision), Prometheus + Grafana, OpenTelemetry → Jaeger/Tempo

@@ -34,6 +34,7 @@
     <module>shared/common-security</module>
     <module>shared/common-logging</module>
     <module>shared/common-messaging</module>
+    <module>shared/common-test</module>
     <module>services/customer-service</module>
     <module>gateway</module>
   </modules>
