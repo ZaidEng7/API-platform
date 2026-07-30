@@ -33,6 +33,7 @@
     <module>shared/common-web</module>
     <module>shared/common-security</module>
     <module>shared/common-logging</module>
+    <module>shared/common-messaging</module>
     <module>services/customer-service</module>
     <module>gateway</module>
   </modules>
