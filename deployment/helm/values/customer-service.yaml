@@ -1,0 +1,26 @@
+# Service-specific values for Customer Service. See gateway.yaml for the
+# full install command pattern.
+#
+# DB_USER/DB_PASSWORD are deliberately NOT set here (guide §12.5: no
+# secrets in Git). envFrom expects a Secret named "customer-service-db"
+# to already exist in the target namespace (created out-of-band — this
+# chart doesn't provision databases or their credentials).
+
+nameOverride: customer-service
+
+image:
+  repository: customer-service
+
+service:
+  port: 8081
+  targetPort: 8081
+
+env:
+  DB_HOST: customer-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: customer_service
+
+envFrom:
+  - secretRef:
+      name: customer-service-db
+      optional: true

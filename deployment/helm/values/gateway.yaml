@@ -1,0 +1,20 @@
+# Service-specific values for the Gateway. Combine with an environment's
+# values.yaml (replica counts, resource tiers) at install time:
+#   helm install gateway deployment/helm/service-chart \
+#     -f deployment/helm/values/gateway.yaml \
+#     -f deployment/environments/<env>/values.yaml \
+#     --set image.repository=<registry>/gateway --set image.tag=<tag>
+
+nameOverride: gateway
+
+image:
+  repository: gateway
+
+service:
+  port: 8080
+  targetPort: 8080
+
+env:
+  # Same-namespace K8s Service DNS name for customer-service (guide §8.1:
+  # REST or events only — this is the Gateway's one synchronous route).
+  CUSTOMER_SERVICE_URI: http://customer-service:8081
