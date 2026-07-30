@@ -2,11 +2,12 @@ package com.company.customer.application;
 
 import com.company.customer.domain.Customer;
 import com.company.customer.infrastructure.CustomerJpaRepository;
+import com.company.platform.web.exception.ApiException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -21,7 +22,7 @@ public class CustomerApplicationService {
     @Transactional(readOnly = true)
     public Customer getById(UUID id) {
         return customerRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Customer not found: " + id));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CUST-4041", "Customer not found: " + id));
     }
 
     @Transactional
