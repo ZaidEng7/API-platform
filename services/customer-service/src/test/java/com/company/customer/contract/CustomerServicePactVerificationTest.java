@@ -46,12 +46,16 @@ import static org.mockito.Mockito.when;
         // Mocking CustomerApplicationService only removes the *repository*
         // call — Spring Boot still autoconfigures a real DataSource/JPA/
         // Flyway at context startup unless told not to, which would need a
-        // live Postgres this test has no business requiring.
+        // live Postgres this test has no business requiring. Same reasoning
+        // now excludes common-messaging's own autoconfiguration: its
+        // OutboxEventStore bean needs a real EntityManagerFactory
+        // (@PersistenceContext) that doesn't exist once JPA is excluded.
         properties = {
                 "spring.autoconfigure.exclude="
                         + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
                         + "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
                         + "org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration,"
+                        + "com.company.platform.messaging.autoconfigure.CommonMessagingAutoConfiguration,"
                         + "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration"
         })
 @AutoConfigureMockMvc
