@@ -41,6 +41,7 @@
     <module>services/document-service</module>
     <module>services/fund-service</module>
     <module>services/portfolio-service</module>
+    <module>services/investment-service</module>
     <module>gateway</module>
     <module>platform/audit-service</module>
     <module>contracts/customer-consumer-example</module>

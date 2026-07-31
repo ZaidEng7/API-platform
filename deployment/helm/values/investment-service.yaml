@@ -1,0 +1,31 @@
+# Service-specific values for Investment Service. See gateway.yaml for the
+# full install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: investment-service
+
+image:
+  repository: investment-service
+
+service:
+  port: 8089
+  targetPort: 8089
+
+env:
+  DB_HOST: investment-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: investment_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  CUSTOMER_SERVICE_URI: http://customer-service:8081
+  KYC_SERVICE_URI: http://kyc-service:8084
+  AML_SERVICE_URI: http://aml-service:8085
+  PORTFOLIO_SERVICE_URI: http://portfolio-service:8088
+
+envFrom:
+  - secretRef:
+      name: investment-service-db
+      optional: true
+  - secretRef:
+      name: investment-service-rabbitmq
+      optional: true
