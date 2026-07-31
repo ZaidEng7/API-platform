@@ -29,6 +29,17 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class CommonMessagingAutoConfiguration {
 
+    // Spring Boot 4's own Jackson autoconfiguration defaults to Jackson 3
+    // (tools.jackson) and no longer provides a com.fasterxml.jackson (Jackson
+    // 2) ObjectMapper bean by default. OutboxEventStore is intentionally on
+    // Jackson 2 (matches the rest of this module), so it needs its own
+    // instance rather than assuming one is auto-configured.
+    @Bean
+    @ConditionalOnMissingBean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper().findAndRegisterModules();
+    }
+
     @Bean
     @ConditionalOnMissingBean
     public OutboxEventStore outboxEventStore(ObjectMapper objectMapper) {

@@ -1,11 +1,11 @@
 package com.company.customer.contract;
 
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
-import au.com.dius.pact.provider.junit5.PactVerificationInvocationContextProvider;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
-import au.com.dius.pact.provider.spring.junit5.MockMvcTestTarget;
+import au.com.dius.pact.provider.spring.spring7.PactVerificationSpring7Provider;
+import au.com.dius.pact.provider.spring.spring7.Spring7MockMvcTestTarget;
 import com.company.customer.application.CustomerApplicationService;
 import com.company.customer.domain.Customer;
 import com.company.platform.web.exception.ApiException;
@@ -68,7 +68,7 @@ class CustomerServicePactVerificationTest {
 
     @BeforeEach
     void setUpTestTarget(PactVerificationContext context) {
-        context.setTarget(new MockMvcTestTarget(mockMvc));
+        context.setTarget(new Spring7MockMvcTestTarget(mockMvc));
     }
 
     @State("a customer with id 11111111-1111-1111-1111-111111111111 exists")
@@ -84,7 +84,7 @@ class CustomerServicePactVerificationTest {
     }
 
     @TestTemplate
-    @ExtendWith(PactVerificationInvocationContextProvider.class)
+    @ExtendWith(PactVerificationSpring7Provider.class)
     void pactVerificationTestTemplate(PactVerificationContext context) {
         context.verifyInteraction();
     }

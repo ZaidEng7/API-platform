@@ -21,7 +21,7 @@
   <properties>
     <java.version>21</java.version>
     <mapstruct.version>1.6.3</mapstruct.version>
-    <pact.version>4.6.17</pact.version>
+    <pact.version>4.7.3</pact.version>
   </properties>
 
   <dependencyManagement>
@@ -104,10 +104,14 @@
       <version>1.0.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
-    <!-- Pact provider verification (template — see contracts/README.md) -->
+    <!-- Pact provider verification (template — see contracts/README.md).
+         spring7 (not junit5spring) — the base junit5spring MockMvcTestTarget
+         calls a MockHttpServletRequestBuilder.headers(HttpHeaders) overload
+         that Spring Framework 7 removed; spring7 ships a
+         Spring7MockMvcTestTarget built against Spring 7/Boot 4. -->
     <dependency>
       <groupId>au.com.dius.pact.provider</groupId>
-      <artifactId>junit5spring</artifactId>
+      <artifactId>spring7</artifactId>
       <version>${pact.version}</version>
       <scope>test</scope>
     </dependency>
