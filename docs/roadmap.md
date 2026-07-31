@@ -50,7 +50,7 @@ Inventory every existing product (stack, owner, DB, APIs, auth, dependencies, co
 
 **Branch:** `phase-3/platform-foundation`
 
-- [x] Shared `platform-bom` (Maven BOM) — Spring Boot 3.x, Java 21, Resilience4j, MapStruct, Flyway, springdoc-openapi versions pinned
+- [x] Shared `platform-bom` (Maven BOM) — Spring Boot 4.1.0 (bumped from 3.3.4, which had been OSS-EOL since June 2025 — 3.5.x also went EOL before this could land, so this jumped straight to the actively-patched 4.x line rather than a second dead end), Java 21, Resilience4j, MapStruct, Flyway, springdoc-openapi versions pinned. All the manual CVE overrides from earlier in Phase 3 were removed — 4.1.0 manages current patched versions of Tomcat/Spring Security/BouncyCastle itself. Real breakage fixed along the way: Testcontainers/Spring Cloud Gateway/Flyway/tracing artifact and property renames from Boot 4's modularization, a Spring Security 7 + Spring Framework 7 `HttpHeaders` binary incompatibility in `CorrelationIdFilter`, and Pact's provider verification module (`junit5spring` → `spring7`)
 - [x] **Walking-skeleton Customer Service** — layered Spring Boot shell (api/application/domain/infrastructure), `POST`/`GET /api/v1/customers`, RFC 7807 error handling, Flyway baseline migration, `/actuator/health`, springdoc OpenAPI UI
 - [x] Gateway shell (Spring Cloud Gateway) — routes to Customer Service, correlation-ID filter (generate/propagate `X-Correlation-Id`), explicit CORS allow-list
 - [x] `shared/common-web` — Problem Details error handling (`ApiException` + `GlobalExceptionHandler`), `ApiResponse`/`PageMeta` envelope, `CorrelationIdFilter` (MDC), auto-configured via Spring Boot autoconfiguration; customer-service refactored to depend on it

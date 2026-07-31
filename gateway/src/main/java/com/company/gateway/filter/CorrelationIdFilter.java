@@ -36,11 +36,16 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
         // throw. A ServerHttpRequestDecorator sidesteps this entirely: it
         // builds a brand new HttpHeaders (copying, not mutating, the
         // original) rather than going through the mutate()/builder path.
+        // Under Spring Security 7.1.0 + Spring Framework 7.0.x, passing the
+        // firewalled StrictFirewallHttpHeaders instance itself as an argument
+        // to HttpHeaders.putAll(HttpHeaders) throws IncompatibleClassChangeError
+        // (a binary mismatch in that release combo, not our bug) — forEach
+        // iteration onto a plain HttpHeaders sidesteps that too.
         ServerHttpRequest decoratedRequest = new ServerHttpRequestDecorator(request) {
             @Override
             public HttpHeaders getHeaders() {
                 HttpHeaders headers = new HttpHeaders();
-                headers.putAll(super.getHeaders());
+                super.getHeaders().forEach(headers::addAll);
                 headers.set(CORRELATION_ID_HEADER, finalCorrelationId);
                 return headers;
             }

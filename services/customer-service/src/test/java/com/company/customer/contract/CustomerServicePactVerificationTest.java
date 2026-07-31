@@ -1,11 +1,11 @@
 package com.company.customer.contract;
 
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
-import au.com.dius.pact.provider.junit5.PactVerificationInvocationContextProvider;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
-import au.com.dius.pact.provider.spring.junit5.MockMvcTestTarget;
+import au.com.dius.pact.provider.spring.spring7.PactVerificationSpring7Provider;
+import au.com.dius.pact.provider.spring.spring7.Spring7MockMvcTestTarget;
 import com.company.customer.application.CustomerApplicationService;
 import com.company.customer.domain.Customer;
 import com.company.platform.web.exception.ApiException;
@@ -14,10 +14,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -49,10 +49,10 @@ import static org.mockito.Mockito.when;
         // live Postgres this test has no business requiring.
         properties = {
                 "spring.autoconfigure.exclude="
-                        + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
+                        + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
+                        + "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
+                        + "org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration,"
+                        + "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration"
         })
 @AutoConfigureMockMvc
 class CustomerServicePactVerificationTest {
@@ -63,12 +63,12 @@ class CustomerServicePactVerificationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private CustomerApplicationService customerApplicationService;
 
     @BeforeEach
     void setUpTestTarget(PactVerificationContext context) {
-        context.setTarget(new MockMvcTestTarget(mockMvc));
+        context.setTarget(new Spring7MockMvcTestTarget(mockMvc));
     }
 
     @State("a customer with id 11111111-1111-1111-1111-111111111111 exists")
@@ -84,7 +84,7 @@ class CustomerServicePactVerificationTest {
     }
 
     @TestTemplate
-    @ExtendWith(PactVerificationInvocationContextProvider.class)
+    @ExtendWith(PactVerificationSpring7Provider.class)
     void pactVerificationTestTemplate(PactVerificationContext context) {
         context.verifyInteraction();
     }

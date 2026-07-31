@@ -6,6 +6,7 @@ import com.company.platform.messaging.outbox.OutboxEvent;
 import com.company.platform.messaging.outbox.OutboxEventStore;
 import com.company.platform.messaging.outbox.OutboxRelayPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +14,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -28,6 +29,19 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConditionalOnClass(RabbitTemplate.class)
 @EnableScheduling
 public class CommonMessagingAutoConfiguration {
+
+    // Spring Boot 4's own Jackson autoconfiguration defaults to Jackson 3
+    // (tools.jackson) and no longer provides a com.fasterxml.jackson (Jackson
+    // 2) ObjectMapper bean by default. OutboxEventStore is intentionally on
+    // Jackson 2 (matches the rest of this module), so it needs its own
+    // instance rather than assuming one is auto-configured.
+    @Bean
+    @ConditionalOnMissingBean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper()
+                .findAndRegisterModules()
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
 
     @Bean
     @ConditionalOnMissingBean

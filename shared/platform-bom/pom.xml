@@ -14,11 +14,10 @@
 
   <properties>
     <java.version>21</java.version>
-    <spring-boot.version>3.3.4</spring-boot.version>
-    <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
+    <spring-boot.version>4.1.0</spring-boot.version>
+    <springdoc-openapi.version>3.0.3</springdoc-openapi.version>
     <resilience4j.version>2.4.0</resilience4j.version>
     <mapstruct.version>1.6.3</mapstruct.version>
-    <flyway.version>13.0.0</flyway.version>
     <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
     <testcontainers.version>2.0.5</testcontainers.version>
   </properties>
@@ -57,18 +56,6 @@
         <groupId>org.mapstruct</groupId>
         <artifactId>mapstruct-processor</artifactId>
         <version>${mapstruct.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-core</artifactId>
-        <version>${flyway.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-database-postgresql</artifactId>
-        <version>${flyway.version}</version>
       </dependency>
 
       <dependency>

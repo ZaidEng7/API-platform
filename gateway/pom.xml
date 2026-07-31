@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.4</version>
+    <version>4.1.0</version>
     <relativePath/>
   </parent>
 
@@ -20,7 +20,7 @@
 
   <properties>
     <java.version>21</java.version>
-    <spring-cloud.version>2023.0.3</spring-cloud.version>
+    <spring-cloud.version>2025.1.2</spring-cloud.version>
   </properties>
 
   <dependencyManagement>
@@ -32,43 +32,13 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- CVE-2025-14813 (critical) in the BouncyCastle version pulled in
-           transitively (via OAuth2 resource server JWT handling) — pin to a
-           fixed release. Not our own dependency, so it needs an explicit
-           override rather than a property. -->
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk18on</artifactId>
-        <version>1.85</version>
-      </dependency>
-      <!-- CVE-2024-38821 and CVE-2026-22732 (both critical) in the Spring Security
-           version Spring Boot 3.3.4 manages by default. Explicit override,
-           not the spring-security.version property — confirmed elsewhere in
-           this repo (customer-service/audit-service) that the property
-           doesn't reliably reach every import path, so using the same
-           always-wins approach everywhere for consistency. -->
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-web</artifactId>
-        <version>6.5.9</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-core</artifactId>
-        <version>6.5.9</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-config</artifactId>
-        <version>6.5.9</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-gateway</artifactId>
+      <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -79,12 +49,8 @@
       <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-tracing-bridge-otel</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-exporter-otlp</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-opentelemetry</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -103,6 +69,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
