@@ -39,7 +39,7 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk18on</artifactId>
-        <version>1.84</version>
+        <version>1.85</version>
       </dependency>
       <!-- CVE-2024-38821 and CVE-2026-22732 (both critical) in the Spring Security
            version Spring Boot 3.3.4 manages by default. Explicit override,
