@@ -24,6 +24,12 @@ spring:
                 - Path=/api/v1/aml/**
               filters:
                 - StripPrefix=0
+            - id: document-service
+              uri: ${DOCUMENT_SERVICE_URI:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/documents/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':
