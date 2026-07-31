@@ -1,0 +1,32 @@
+# Service-specific values for Fund Service. See gateway.yaml for the full
+# install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: fund-service
+
+image:
+  repository: fund-service
+
+service:
+  port: 8087
+  targetPort: 8087
+
+env:
+  DB_HOST: fund-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: fund_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  # Forward-looking, like DB_HOST above: integration/fund-mgmt-adapter has
+  # no Helm chart of its own yet (adapters aren't part of the live-cluster
+  # deploy flow — see k8s-smoke-test in ci.yml), so this Service doesn't
+  # actually exist in-cluster today. Update once it does.
+  FUND_MGMT_ADAPTER_URI: http://fund-mgmt-adapter:8086
+
+envFrom:
+  - secretRef:
+      name: fund-service-db
+      optional: true
+  - secretRef:
+      name: fund-service-rabbitmq
+      optional: true

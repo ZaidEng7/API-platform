@@ -30,6 +30,12 @@ spring:
                 - Path=/api/v1/documents/**
               filters:
                 - StripPrefix=0
+            - id: fund-service
+              uri: ${FUND_SERVICE_URI:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/funds/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':
