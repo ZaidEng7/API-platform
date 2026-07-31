@@ -390,12 +390,13 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Build Docker images for all five services
+      - name: Build Docker images for all six services
         run: |
           docker build --build-arg MODULE=gateway --build-arg JAR_NAME=gateway-1.0.0-SNAPSHOT.jar -t gateway:ci .
           docker build --build-arg MODULE=services/customer-service --build-arg JAR_NAME=customer-service-1.0.0-SNAPSHOT.jar -t customer-service:ci .
           docker build --build-arg MODULE=services/kyc-service --build-arg JAR_NAME=kyc-service-1.0.0-SNAPSHOT.jar -t kyc-service:ci .
           docker build --build-arg MODULE=services/aml-service --build-arg JAR_NAME=aml-service-1.0.0-SNAPSHOT.jar -t aml-service:ci .
+          docker build --build-arg MODULE=services/document-service --build-arg JAR_NAME=document-service-1.0.0-SNAPSHOT.jar -t document-service:ci .
           docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service:ci .
 
       - name: Install Helm
@@ -403,7 +404,7 @@ jobs:
 
       - name: Lint the chart for every service and environment
         run: |
-          for svc in gateway customer-service kyc-service aml-service audit-service; do
+          for svc in gateway customer-service kyc-service aml-service document-service audit-service; do
             for env in dev test staging prod; do
               helm lint deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \
@@ -420,7 +421,7 @@ jobs:
       - name: Validate rendered manifests and namespace/NetworkPolicy YAML against real K8s schemas
         run: |
           set -e
-          for svc in gateway customer-service kyc-service aml-service audit-service; do
+          for svc in gateway customer-service kyc-service aml-service document-service audit-service; do
             for env in dev test staging prod; do
               helm template $svc deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \
@@ -543,6 +544,9 @@ jobs:
           - service: aml-service
             module: services/aml-service
             jar: aml-service-1.0.0-SNAPSHOT.jar
+          - service: document-service
+            module: services/document-service
+            jar: document-service-1.0.0-SNAPSHOT.jar
           - service: audit-service
             module: platform/audit-service
             jar: audit-service-1.0.0-SNAPSHOT.jar

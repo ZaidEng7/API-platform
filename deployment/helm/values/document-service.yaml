@@ -1,0 +1,27 @@
+# Service-specific values for Document Service. See gateway.yaml for the
+# full install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: document-service
+
+image:
+  repository: document-service
+
+service:
+  port: 8086
+  targetPort: 8086
+
+env:
+  DB_HOST: document-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: document_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+
+envFrom:
+  - secretRef:
+      name: document-service-db
+      optional: true
+  - secretRef:
+      name: document-service-rabbitmq
+      optional: true
