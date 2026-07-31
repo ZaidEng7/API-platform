@@ -28,6 +28,7 @@
          Staying on the 10.1.x line (not jumping to 11.x) to match what
          Spring Boot 3.3.x's Jakarta EE version expects. -->
     <tomcat.version>10.1.55</tomcat.version>
+    <pact.version>4.6.17</pact.version>
   </properties>
 
   <dependencyManagement>
@@ -136,6 +137,13 @@
       <version>1.0.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
+    <!-- Pact provider verification (template — see contracts/README.md) -->
+    <dependency>
+      <groupId>au.com.dius.pact.provider</groupId>
+      <artifactId>junit5spring</artifactId>
+      <version>${pact.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -143,6 +151,17 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- CustomerServicePactVerificationTest needs the Pact Broker up
+               with the consumer's pact already published — only true in the
+               dedicated pact-contract-verification CI job, not the default
+               build-and-test run. -->
+          <excludedGroups>pact</excludedGroups>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -157,6 +176,48 @@
           </annotationProcessorPaths>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.13</version>
+        <executions>
+          <execution>
+            <id>jacoco-prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Activated by the pact-contract-verification CI job only (`mvn test
+         -Ppact-verification`) — flips surefire from excluding
+         CustomerServicePactVerificationTest to running only it. A plain
+         `-DexcludedGroups=` on the command line does not reliably override
+         the pom-configured value, so a profile is used instead. -->
+    <profile>
+      <id>pact-verification</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludedGroups combine.self="override"></excludedGroups>
+              <groups>pact</groups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

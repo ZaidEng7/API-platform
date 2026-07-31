@@ -38,5 +38,6 @@
     <module>services/customer-service</module>
     <module>gateway</module>
     <module>platform/audit-service</module>
+    <module>contracts/customer-consumer-example</module>
   </modules>
 </project>
