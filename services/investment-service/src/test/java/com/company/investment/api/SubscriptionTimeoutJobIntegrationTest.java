@@ -86,7 +86,12 @@ class SubscriptionTimeoutJobIntegrationTest extends AbstractMessagingIntegration
                 .andExpect(jsonPath("$.data.status").value("AWAITING_PAYMENT"))
                 .andReturn().getResponse().getHeader("Location");
 
-        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+        // pollInSameThread(): Awaitility polls on a background thread by
+        // default, where SecurityContextHolder's ThreadLocal wouldn't see
+        // @WithMockUser's authentication (set on the test thread) — the
+        // request would look anonymous and get a false-negative 403
+        // (established building Audit Service's own integration test).
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
                 mockMvc.perform(get(location))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.status").value("TIMED_OUT")));
