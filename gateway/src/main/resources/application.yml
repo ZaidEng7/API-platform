@@ -3,20 +3,22 @@ spring:
     name: gateway
   cloud:
     gateway:
-      routes:
-        - id: customer-service
-          uri: ${CUSTOMER_SERVICE_URI:http://localhost:8081}
-          predicates:
-            - Path=/api/v1/customers/**
-          filters:
-            - StripPrefix=0
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:4200}
-            allowedMethods: [GET, POST, PUT, PATCH, DELETE]
-            allowedHeaders: [Authorization, Content-Type, X-Correlation-Id]
-            allowCredentials: true
+      server:
+        webflux:
+          routes:
+            - id: customer-service
+              uri: ${CUSTOMER_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/customers/**
+              filters:
+                - StripPrefix=0
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+                allowedMethods: [GET, POST, PUT, PATCH, DELETE]
+                allowedHeaders: [Authorization, Content-Type, X-Correlation-Id]
+                allowCredentials: true
   security:
     oauth2:
       resourceserver:

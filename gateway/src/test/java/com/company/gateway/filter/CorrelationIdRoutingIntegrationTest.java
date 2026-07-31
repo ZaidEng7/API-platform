@@ -5,6 +5,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * and the response.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient
 class CorrelationIdRoutingIntegrationTest {
 
     private static final AtomicReference<String> RECEIVED_CORRELATION_ID = new AtomicReference<>();
@@ -56,9 +58,9 @@ class CorrelationIdRoutingIntegrationTest {
     @DynamicPropertySource
     static void routeToStubBackend(DynamicPropertyRegistry registry) {
         int port = STUB_BACKEND.getAddress().getPort();
-        registry.add("spring.cloud.gateway.routes[0].id", () -> "customer-service");
-        registry.add("spring.cloud.gateway.routes[0].uri", () -> "http://localhost:" + port);
-        registry.add("spring.cloud.gateway.routes[0].predicates[0]", () -> "Path=/api/v1/customers/**");
+        registry.add("spring.cloud.gateway.server.webflux.routes[0].id", () -> "customer-service");
+        registry.add("spring.cloud.gateway.server.webflux.routes[0].uri", () -> "http://localhost:" + port);
+        registry.add("spring.cloud.gateway.server.webflux.routes[0].predicates[0]", () -> "Path=/api/v1/customers/**");
     }
 
     @Test

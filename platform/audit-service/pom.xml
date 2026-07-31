@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.4</version>
+    <version>4.1.0</version>
     <relativePath/>
   </parent>
 
@@ -21,13 +21,6 @@
   <properties>
     <java.version>21</java.version>
     <mapstruct.version>1.6.3</mapstruct.version>
-    <!-- CVE-2025-24813 (RCE/info-disclosure) and CVE-2026-41293 (Tomcat's
-         own patch releases keep landing new criticals) in the Tomcat
-         version Spring Boot 3.3.4 manages by default — override via the
-         property spring-boot-dependencies itself uses to template it.
-         Staying on the 10.1.x line (not jumping to 11.x) to match what
-         Spring Boot 3.3.x's Jakarta EE version expects. -->
-    <tomcat.version>10.1.55</tomcat.version>
   </properties>
 
   <dependencyManagement>
@@ -38,28 +31,6 @@
         <version>1.0.0-SNAPSHOT</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <!-- CVE-2024-38821 and CVE-2026-22732 (both critical): the spring-security.version
-           property override doesn't reliably reach dependencies pulled in
-           via common-security (a separate module imported via platform-bom,
-           not this project's own parent chain) — confirmed empirically that
-           the property took effect for tomcat-embed-core but not this, so
-           using an explicit override instead, which always wins regardless
-           of import path. -->
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-web</artifactId>
-        <version>6.5.9</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-core</artifactId>
-        <version>6.5.9</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-config</artifactId>
-        <version>6.5.9</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -5,7 +5,7 @@ import com.company.platform.messaging.idempotent.ProcessedEvent;
 import com.company.platform.messaging.outbox.OutboxEvent;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 
 /**
  * {@code @EntityScan} is required here, not optional: the moment ANY
