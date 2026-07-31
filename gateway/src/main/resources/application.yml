@@ -12,6 +12,12 @@ spring:
                 - Path=/api/v1/customers/**
               filters:
                 - StripPrefix=0
+            - id: kyc-service
+              uri: ${KYC_SERVICE_URI:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/kyc-checks/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':

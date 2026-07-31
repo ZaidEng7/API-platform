@@ -36,6 +36,7 @@
     <module>shared/common-messaging</module>
     <module>shared/common-test</module>
     <module>services/customer-service</module>
+    <module>services/kyc-service</module>
     <module>gateway</module>
     <module>platform/audit-service</module>
     <module>contracts/customer-consumer-example</module>
