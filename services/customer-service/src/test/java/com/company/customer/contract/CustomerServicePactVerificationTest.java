@@ -8,6 +8,7 @@ import au.com.dius.pact.provider.spring.spring7.PactVerificationSpring7Provider;
 import au.com.dius.pact.provider.spring.spring7.Spring7MockMvcTestTarget;
 import com.company.customer.application.CustomerApplicationService;
 import com.company.customer.domain.Customer;
+import com.company.customer.domain.PartyType;
 import com.company.platform.web.exception.ApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -78,7 +79,8 @@ class CustomerServicePactVerificationTest {
     @State("a customer with id 11111111-1111-1111-1111-111111111111 exists")
     void customerExists() {
         when(customerApplicationService.getById(CUSTOMER_ID)).thenReturn(
-                new Customer(CUSTOMER_ID, "Ada Lovelace", "ada@example.com", Instant.parse("2026-01-01T00:00:00Z")));
+                new Customer(CUSTOMER_ID, "Ada Lovelace", "ada@example.com", null, null, PartyType.INDIVIDUAL,
+                        Instant.parse("2026-01-01T00:00:00Z")));
     }
 
     @State("no customer exists with id 22222222-2222-2222-2222-222222222222")
