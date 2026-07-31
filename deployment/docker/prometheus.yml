@@ -32,6 +32,11 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:8087"]
 
+  - job_name: portfolio-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8088"]
+
   - job_name: audit-service
     metrics_path: /actuator/prometheus
     static_configs:

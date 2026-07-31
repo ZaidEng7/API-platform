@@ -1,0 +1,28 @@
+# Service-specific values for Portfolio Service. See gateway.yaml for the
+# full install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: portfolio-service
+
+image:
+  repository: portfolio-service
+
+service:
+  port: 8088
+  targetPort: 8088
+
+env:
+  DB_HOST: portfolio-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: portfolio_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  FUND_SERVICE_URI: http://fund-service:8087
+
+envFrom:
+  - secretRef:
+      name: portfolio-service-db
+      optional: true
+  - secretRef:
+      name: portfolio-service-rabbitmq
+      optional: true

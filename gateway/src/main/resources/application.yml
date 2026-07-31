@@ -36,6 +36,12 @@ spring:
                 - Path=/api/v1/funds/**
               filters:
                 - StripPrefix=0
+            - id: portfolio-service
+              uri: ${PORTFOLIO_SERVICE_URI:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/portfolios/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':
