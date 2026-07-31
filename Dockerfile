@@ -11,6 +11,7 @@
 #   docker build --build-arg MODULE=services/kyc-service --build-arg JAR_NAME=kyc-service-1.0.0-SNAPSHOT.jar -t kyc-service .
 #   docker build --build-arg MODULE=services/aml-service --build-arg JAR_NAME=aml-service-1.0.0-SNAPSHOT.jar -t aml-service .
 #   docker build --build-arg MODULE=services/document-service --build-arg JAR_NAME=document-service-1.0.0-SNAPSHOT.jar -t document-service .
+#   docker build --build-arg MODULE=services/fund-service --build-arg JAR_NAME=fund-service-1.0.0-SNAPSHOT.jar -t fund-service .
 #   docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service .
 #   docker build --build-arg MODULE=integration/crm-adapter --build-arg JAR_NAME=crm-adapter-1.0.0-SNAPSHOT.jar -t crm-adapter .
 #   docker build --build-arg MODULE=integration/onboarding-adapter --build-arg JAR_NAME=onboarding-adapter-1.0.0-SNAPSHOT.jar -t onboarding-adapter .
