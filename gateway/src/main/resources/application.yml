@@ -18,6 +18,12 @@ spring:
                 - Path=/api/v1/kyc-checks/**
               filters:
                 - StripPrefix=0
+            - id: aml-service
+              uri: ${AML_SERVICE_URI:http://localhost:8085}
+              predicates:
+                - Path=/api/v1/aml/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':
