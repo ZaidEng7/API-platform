@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: onboarding-adapter
+
+server:
+  port: ${SERVER_PORT:8085}
+
+# TEMPLATE — a fake legacy endpoint. Point this at the real legacy
+# onboarding system's base URL once one exists (see README.md).
+legacy-onboarding:
+  base-url: ${LEGACY_ONBOARDING_BASE_URL:http://localhost:9998}
+
+# §9.4 mandatory resilience config. Connect/read timeouts are on the
+# RestClient itself (LegacyOnboardingClientConfig). No retry instance here
+# on purpose — this is a write, and §9.4 says never blind-retry one (see
+# LegacyOnboardingClient's Javadoc).
+resilience4j:
+  circuitbreaker:
+    instances:
+      legacyOnboarding:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+  bulkhead:
+    instances:
+      legacyOnboarding:
+        max-concurrent-calls: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0 # sample everything — dev/demo scale only, revisit before prod
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+
+logging:
+  file:
+    name: ${LOG_FILE_NAME:logs/onboarding-adapter.log}

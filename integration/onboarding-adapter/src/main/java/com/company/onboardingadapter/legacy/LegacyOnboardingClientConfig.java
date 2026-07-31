@@ -1,4 +1,4 @@
-package com.company.crmadapter.legacy;
+package com.company.onboardingadapter.legacy;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
@@ -16,20 +16,18 @@ import java.time.Duration;
  * itself instead of via a resilience4j annotation.
  */
 @Configuration
-public class LegacyCrmClientConfig {
+public class LegacyOnboardingClientConfig {
 
     @Bean
-    public RestClient legacyCrmRestClient(@Value("${legacy-crm.base-url}") String baseUrl) {
+    public RestClient legacyOnboardingRestClient(@Value("${legacy-onboarding.base-url}") String baseUrl) {
         HttpClientSettings settings = HttpClientSettings.defaults()
                 .withConnectTimeout(Duration.ofSeconds(2))
-                .withReadTimeout(Duration.ofSeconds(5));
+                .withReadTimeout(Duration.ofSeconds(10)); // known-slow legacy op, §9.4's 10s max
         // httpComponents(), not detect() (which prefers the JDK client's
         // HTTP/2-over-cleartext attempt) — a real legacy system is
         // essentially guaranteed to be HTTP/1.1 only, and h2c against a
-        // server that doesn't expect it produces RST_STREAM failures
-        // (confirmed on onboarding-adapter's POST-with-body call against
-        // WireMock's embedded Jetty; applying the same fix here for
-        // consistency even though this GET-only client didn't trip it).
+        // server that doesn't expect it produces RST_STREAM failures on
+        // POST-with-body (confirmed against WireMock's embedded Jetty).
         ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.httpComponents().build(settings);
 
         return RestClient.builder()

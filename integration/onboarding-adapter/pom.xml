@@ -12,11 +12,11 @@
   </parent>
 
   <groupId>com.company.integration</groupId>
-  <artifactId>crm-adapter</artifactId>
+  <artifactId>onboarding-adapter</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 
-  <name>CRM Adapter (Phase 4 template)</name>
-  <description>TEMPLATE anti-corruption layer (guide §9) — demonstrates the pattern (translation, resilience per §9.4, contract stability) against a stub legacy backend. Not a real CRM integration; see README.md before pointing this at anything real.</description>
+  <name>Onboarding Adapter (Phase 4 template)</name>
+  <description>TEMPLATE anti-corruption layer (guide §9) — a write-side counterpart to crm-adapter: demonstrates §9.3 legacy write semantics (no blind retry, confirm-then-execute) against a stub legacy backend. Not a real onboarding integration; see README.md before pointing this at anything real.</description>
 
   <properties>
     <java.version>21</java.version>
@@ -49,7 +49,7 @@
     </dependency>
     <!-- Forces the legacy RestClient onto HTTP/1.1 (Apache HttpClient5)
          instead of the JDK client's default HTTP/2-over-cleartext attempt —
-         see LegacyCrmClientConfig. -->
+         see LegacyOnboardingClientConfig. -->
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
@@ -64,11 +64,12 @@
     </dependency>
     <!-- spring-boot-starter-aop was discontinued in Boot 4 (renamed to
          spring-boot-starter-aspectj, which is for actual compile/load-time
-         weaving we don't need). resilience4j's @CircuitBreaker/@Retry/
-         @Bulkhead aspects are genuine @Aspect-annotated classes though —
-         without aspectjweaver on the classpath their autoconfiguration's
+         weaving we don't need). resilience4j's @CircuitBreaker/@Bulkhead
+         aspects are genuine @Aspect-annotated classes though — without
+         aspectjweaver on the classpath their autoconfiguration's
          @ConditionalOnClass(Aspect.class) silently fails and the
-         annotations become no-ops. -->
+         annotations become no-ops (confirmed the hard way in
+         crm-adapter). -->
     <dependency>
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
