@@ -41,5 +41,6 @@
     <module>contracts/customer-consumer-example</module>
     <module>integration/crm-adapter</module>
     <module>integration/onboarding-adapter</module>
+    <module>integration/fund-mgmt-adapter</module>
   </modules>
 </project>

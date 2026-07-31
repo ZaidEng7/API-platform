@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: fund-mgmt-adapter
+
+server:
+  port: ${SERVER_PORT:8086}
+
+# TEMPLATE — a fake legacy endpoint. Point this at the real legacy fund
+# management system's base URL once one exists (see README.md).
+legacy-fund-mgmt:
+  base-url: ${LEGACY_FUND_MGMT_BASE_URL:http://localhost:9994}
+
+# The fictional legacy system republishes NAV once daily after market
+# close — see README.md and FundNavCacheConfig. 30 minutes here is a
+# dev/demo-convenient value, not the real one; a real integration should
+# set this close to the actual batch-window length.
+fund-mgmt:
+  nav-cache-ttl: PT30M
+
+# §9.4 mandatory resilience config. Connect/read timeouts are on the
+# RestClient itself (LegacyFundMgmtClientConfig).
+resilience4j:
+  circuitbreaker:
+    instances:
+      legacyFundMgmt:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+  retry:
+    instances:
+      legacyFundMgmt:
+        max-attempts: 3 # 2 retries, per §9.4 — idempotent GET only
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true # jitter
+        randomized-wait-factor: 0.5
+  bulkhead:
+    instances:
+      legacyFundMgmt:
+        max-concurrent-calls: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0 # sample everything — dev/demo scale only, revisit before prod
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+
+logging:
+  file:
+    name: ${LOG_FILE_NAME:logs/fund-mgmt-adapter.log}
