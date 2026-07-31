@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * TEMPLATE contract test. Proves the Pact toolchain end to end (consumer DSL
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CustomerServiceClientPactTest {
 
     private static final UUID CUSTOMER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID UNKNOWN_CUSTOMER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
     @Pact(consumer = "gateway-example-consumer", provider = "customer-service")
     RequestResponsePact getCustomerById(PactDslWithProvider builder) {
@@ -53,6 +55,25 @@ class CustomerServiceClientPactTest {
                 .toPact();
     }
 
+    @Pact(consumer = "gateway-example-consumer", provider = "customer-service")
+    RequestResponsePact getUnknownCustomerById(PactDslWithProvider builder) {
+        return builder
+                .given("no customer exists with id 22222222-2222-2222-2222-222222222222")
+                .uponReceiving("a request for that customer")
+                .path("/api/v1/customers/" + UNKNOWN_CUSTOMER_ID)
+                .method("GET")
+                .willRespondWith()
+                .status(404)
+                .headers(Map.of("Content-Type", "application/problem+json"))
+                .body("""
+                        {
+                          "status": 404,
+                          "errorCode": "CUST-4041"
+                        }
+                        """)
+                .toPact();
+    }
+
     @Test
     @PactTestFor(pactMethod = "getCustomerById", pactVersion = PactSpecVersion.V3)
     void clientParsesCustomerResponse(MockServer mockServer) throws Exception {
@@ -63,5 +84,14 @@ class CustomerServiceClientPactTest {
         assertEquals(CUSTOMER_ID, customer.id());
         assertEquals("Ada Lovelace", customer.fullName());
         assertEquals("ada@example.com", customer.email());
+    }
+
+    @Test
+    @PactTestFor(pactMethod = "getUnknownCustomerById", pactVersion = PactSpecVersion.V3)
+    void clientThrowsWhenCustomerNotFound(MockServer mockServer) {
+        var client = new CustomerServiceClient(mockServer.getUrl());
+
+        assertThrows(CustomerServiceClient.CustomerNotFoundException.class,
+                () -> client.getById(UNKNOWN_CUSTOMER_ID));
     }
 }

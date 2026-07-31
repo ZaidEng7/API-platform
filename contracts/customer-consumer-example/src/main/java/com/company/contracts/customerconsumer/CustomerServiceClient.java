@@ -36,11 +36,8 @@ public class CustomerServiceClient {
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() == 404) {
-            throw new CustomerNotFoundException(id);
-        }
         if (response.statusCode() != 200) {
-            throw new IllegalStateException("Unexpected status " + response.statusCode() + " from customer-service");
+            throw new CustomerNotFoundException(id);
         }
 
         ApiEnvelope envelope = objectMapper.readValue(response.body(), ApiEnvelope.class);

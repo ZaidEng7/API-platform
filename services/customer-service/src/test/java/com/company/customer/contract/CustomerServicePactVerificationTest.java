@@ -8,6 +8,7 @@ import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
 import au.com.dius.pact.provider.spring.junit5.MockMvcTestTarget;
 import com.company.customer.application.CustomerApplicationService;
 import com.company.customer.domain.Customer;
+import com.company.platform.web.exception.ApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -56,6 +58,7 @@ import static org.mockito.Mockito.when;
 class CustomerServicePactVerificationTest {
 
     private static final UUID CUSTOMER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID UNKNOWN_CUSTOMER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
     @Autowired
     private MockMvc mockMvc;
@@ -72,6 +75,12 @@ class CustomerServicePactVerificationTest {
     void customerExists() {
         when(customerApplicationService.getById(CUSTOMER_ID)).thenReturn(
                 new Customer(CUSTOMER_ID, "Ada Lovelace", "ada@example.com", Instant.parse("2026-01-01T00:00:00Z")));
+    }
+
+    @State("no customer exists with id 22222222-2222-2222-2222-222222222222")
+    void customerDoesNotExist() {
+        when(customerApplicationService.getById(UNKNOWN_CUSTOMER_ID)).thenThrow(
+                new ApiException(HttpStatus.NOT_FOUND, "CUST-4041", "Customer not found: " + UNKNOWN_CUSTOMER_ID));
     }
 
     @TestTemplate
