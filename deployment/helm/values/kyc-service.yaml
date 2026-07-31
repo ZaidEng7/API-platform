@@ -1,0 +1,27 @@
+# Service-specific values for KYC Service. See gateway.yaml for the full
+# install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: kyc-service
+
+image:
+  repository: kyc-service
+
+service:
+  port: 8084
+  targetPort: 8084
+
+env:
+  DB_HOST: kyc-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: kyc_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+
+envFrom:
+  - secretRef:
+      name: kyc-service-db
+      optional: true
+  - secretRef:
+      name: kyc-service-rabbitmq
+      optional: true

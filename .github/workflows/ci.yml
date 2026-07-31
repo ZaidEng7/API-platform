@@ -390,10 +390,11 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Build Docker images for all three services
+      - name: Build Docker images for all four services
         run: |
           docker build --build-arg MODULE=gateway --build-arg JAR_NAME=gateway-1.0.0-SNAPSHOT.jar -t gateway:ci .
           docker build --build-arg MODULE=services/customer-service --build-arg JAR_NAME=customer-service-1.0.0-SNAPSHOT.jar -t customer-service:ci .
+          docker build --build-arg MODULE=services/kyc-service --build-arg JAR_NAME=kyc-service-1.0.0-SNAPSHOT.jar -t kyc-service:ci .
           docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service:ci .
 
       - name: Install Helm
@@ -401,7 +402,7 @@ jobs:
 
       - name: Lint the chart for every service and environment
         run: |
-          for svc in gateway customer-service audit-service; do
+          for svc in gateway customer-service kyc-service audit-service; do
             for env in dev test staging prod; do
               helm lint deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \
@@ -418,7 +419,7 @@ jobs:
       - name: Validate rendered manifests and namespace/NetworkPolicy YAML against real K8s schemas
         run: |
           set -e
-          for svc in gateway customer-service audit-service; do
+          for svc in gateway customer-service kyc-service audit-service; do
             for env in dev test staging prod; do
               helm template $svc deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \
@@ -535,6 +536,9 @@ jobs:
           - service: customer-service
             module: services/customer-service
             jar: customer-service-1.0.0-SNAPSHOT.jar
+          - service: kyc-service
+            module: services/kyc-service
+            jar: kyc-service-1.0.0-SNAPSHOT.jar
           - service: audit-service
             module: platform/audit-service
             jar: audit-service-1.0.0-SNAPSHOT.jar

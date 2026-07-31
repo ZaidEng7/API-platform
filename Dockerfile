@@ -8,6 +8,7 @@
 # Build:
 #   docker build --build-arg MODULE=gateway --build-arg JAR_NAME=gateway-1.0.0-SNAPSHOT.jar -t gateway .
 #   docker build --build-arg MODULE=services/customer-service --build-arg JAR_NAME=customer-service-1.0.0-SNAPSHOT.jar -t customer-service .
+#   docker build --build-arg MODULE=services/kyc-service --build-arg JAR_NAME=kyc-service-1.0.0-SNAPSHOT.jar -t kyc-service .
 #   docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service .
 #   docker build --build-arg MODULE=integration/crm-adapter --build-arg JAR_NAME=crm-adapter-1.0.0-SNAPSHOT.jar -t crm-adapter .
 #   docker build --build-arg MODULE=integration/onboarding-adapter --build-arg JAR_NAME=onboarding-adapter-1.0.0-SNAPSHOT.jar -t onboarding-adapter .
