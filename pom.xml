@@ -40,5 +40,6 @@
     <module>platform/audit-service</module>
     <module>contracts/customer-consumer-example</module>
     <module>integration/crm-adapter</module>
+    <module>integration/onboarding-adapter</module>
   </modules>
 </project>

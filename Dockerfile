@@ -10,6 +10,7 @@
 #   docker build --build-arg MODULE=services/customer-service --build-arg JAR_NAME=customer-service-1.0.0-SNAPSHOT.jar -t customer-service .
 #   docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service .
 #   docker build --build-arg MODULE=integration/crm-adapter --build-arg JAR_NAME=crm-adapter-1.0.0-SNAPSHOT.jar -t crm-adapter .
+#   docker build --build-arg MODULE=integration/onboarding-adapter --build-arg JAR_NAME=onboarding-adapter-1.0.0-SNAPSHOT.jar -t onboarding-adapter .
 
 ARG JDK_IMAGE=maven:3.9-eclipse-temurin-21
 ARG JRE_IMAGE=eclipse-temurin:21-jre-jammy

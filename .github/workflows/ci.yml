@@ -541,6 +541,9 @@ jobs:
           - service: crm-adapter
             module: integration/crm-adapter
             jar: crm-adapter-1.0.0-SNAPSHOT.jar
+          - service: onboarding-adapter
+            module: integration/onboarding-adapter
+            jar: onboarding-adapter-1.0.0-SNAPSHOT.jar
     steps:
       - name: Checkout
         uses: actions/checkout@v7

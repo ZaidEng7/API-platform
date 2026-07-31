@@ -13,7 +13,9 @@ This is a **template**, not a real integration. Phase 1 (Assessment) — which w
 - [`LegacyCrmCustomerRecord`](src/main/java/com/company/crmadapter/legacy/dto/LegacyCrmCustomerRecord.java) — a made-up legacy shape (`CUST_ID`, `CUST_STATUS_CD`, `VIP_FLG`) standing in for whatever the real CRM actually returns.
 - `legacy-crm.base-url` defaults to `http://localhost:9999` — nothing real is listening there.
 - The specific resilience numbers (20-call sliding window, 50% failure threshold, 30s open-state wait) are the guide's own defaults, not numbers derived from how the real legacy CRM actually behaves.
-- No legacy write semantics documented (guide §9.3) — this adapter only reads.
+- No legacy write semantics documented (guide §9.3) — this adapter only reads. See `integration/onboarding-adapter` for the write-side counterpart (no blind retry, confirm-then-execute).
+
+The legacy `RestClient` is forced onto HTTP/1.1 (Apache HttpClient5) rather than the default JDK-client HTTP/2-over-cleartext attempt — real, not stylistic: `onboarding-adapter`'s POST call hit `RST_STREAM` failures against WireMock's Jetty server without it, and a real legacy system is essentially guaranteed to be HTTP/1.1-only anyway.
 
 ## Replacing the template with a real integration
 
