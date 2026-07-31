@@ -78,5 +78,5 @@ Each consuming service declares its own **quorum queues** bound to `domain-event
 
 ## Known limitations
 
-- No Testcontainers-backed integration test yet for the outbox/idempotency persistence paths — lands with `shared/common-test`. Only the envelope's JSON contract is unit-tested here.
-- `OutboxRelayPublisher` publishes the raw JSON payload (not the full envelope) as the message body, with `eventId`/`correlationId` carried in AMQP message properties — consumers that want the full envelope shape on the wire should call `write()` with the envelope itself as the payload.
+- No Testcontainers-backed integration test in this module itself for the outbox/idempotency persistence paths — Customer Service's `CustomerEventPublishingIntegrationTest` now covers the full outbox→relay→RabbitMQ path from a real producer, and Audit Service's own integration test covers the consumer side, but neither lives here. Only the envelope's JSON contract is unit-tested in this module.
+- `OutboxRelayPublisher` publishes whatever payload `write()` was given as the message body, with `eventId`/`correlationId` carried in AMQP message properties too — it does NOT wrap that payload in `EventEnvelope` for you. Consumers that want the full envelope shape on the wire must call `write()` with the envelope itself as the payload (as Customer Service does for `customer.party.created` — see `services/customer-service`'s `CustomerApplicationService`).

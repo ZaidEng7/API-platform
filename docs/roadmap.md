@@ -83,7 +83,7 @@ Inventory every existing product (stack, owner, DB, APIs, auth, dependencies, co
 
 Build order is dependency-driven — do not reorder without an ADR:
 
-- [ ] 1. Customer Service (Party data — everything depends on this)
+- [ ] 1. Customer Service (Party data — everything depends on this) — in progress: now publishes `customer.party.created` on customer creation via common-messaging's outbox pattern (guide §8.4/§22), the first real producer that plumbing has had (Audit Service has consumed from `domain-events` since Phase 3, but nothing published to it for real until now). Full `EventEnvelope` is stored as the outbox payload (not just raw domain data), closing a gap `DomainEventAuditListener`'s Javadoc flagged — consumers now see the mandatory envelope shape, including a real `occurredAt`, once relayed. Correlation ID is threaded from `CorrelationIdFilter`'s MDC value straight into the envelope, so a request's correlation ID now flows through logs *and* the event it caused. `CustomerEventPublishingIntegrationTest` proves the full outbox→relay→RabbitMQ path against a real (Testcontainers) broker — not just that the annotations/beans exist. §8.3's "conflict!" cell (interim SoR = Onboarding + CRM) is unaffected by this — it's about legacy reconciliation, a Phase 1/6 concern, not the shape of this new service. Still to do before this line item is done: the actual KYC-adjacent Customer/Party API surface (this increment only touched the existing walking-skeleton create/get endpoints), and a real consumer of `customer.party.created`.
 - [ ] 2. KYC Service
 - [ ] 3. AML Service
 - [ ] 4. Document Service (KYC needs it)

@@ -1,6 +1,6 @@
 package com.company.customer.api;
 
-import com.company.platform.test.AbstractPostgresIntegrationTest;
+import com.company.platform.test.AbstractMessagingIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -14,11 +14,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Real Postgres via Testcontainers (guide §20) — exercises the actual
- * Flyway migration, JPA repository, controller, and common-web's
- * Problem Details / envelope handling end to end.
+ * Real Postgres + RabbitMQ via Testcontainers (guide §20) — exercises the
+ * actual Flyway migration, JPA repository, controller, and common-web's
+ * Problem Details / envelope handling end to end. RabbitMQ is required now
+ * that {@code create()} writes an outbox row on the same connection pool
+ * common-messaging's autoconfiguration wires up (see
+ * CustomerEventPublishingIntegrationTest for the outbox→relay→RabbitMQ path
+ * itself).
  */
-class CustomerControllerIntegrationTest extends AbstractPostgresIntegrationTest {
+class CustomerControllerIntegrationTest extends AbstractMessagingIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
