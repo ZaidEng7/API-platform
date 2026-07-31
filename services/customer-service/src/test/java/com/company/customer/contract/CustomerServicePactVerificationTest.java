@@ -39,7 +39,19 @@ import static org.mockito.Mockito.when;
 @Tag("pact")
 @Provider("customer-service")
 @PactBroker(url = "${PACT_BROKER_URL:http://localhost:9292}")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        // Mocking CustomerApplicationService only removes the *repository*
+        // call — Spring Boot still autoconfigures a real DataSource/JPA/
+        // Flyway at context startup unless told not to, which would need a
+        // live Postgres this test has no business requiring.
+        properties = {
+                "spring.autoconfigure.exclude="
+                        + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
+                        + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
+                        + "org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,"
+                        + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
+        })
 @AutoConfigureMockMvc
 class CustomerServicePactVerificationTest {
 
