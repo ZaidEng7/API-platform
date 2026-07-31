@@ -538,6 +538,9 @@ jobs:
           - service: audit-service
             module: platform/audit-service
             jar: audit-service-1.0.0-SNAPSHOT.jar
+          - service: crm-adapter
+            module: integration/crm-adapter
+            jar: crm-adapter-1.0.0-SNAPSHOT.jar
     steps:
       - name: Checkout
         uses: actions/checkout@v7
