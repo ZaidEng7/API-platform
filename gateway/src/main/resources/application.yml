@@ -42,6 +42,12 @@ spring:
                 - Path=/api/v1/portfolios/**
               filters:
                 - StripPrefix=0
+            - id: investment-service
+              uri: ${INVESTMENT_SERVICE_URI:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/subscriptions/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':
