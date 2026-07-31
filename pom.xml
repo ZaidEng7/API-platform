@@ -39,5 +39,6 @@
     <module>gateway</module>
     <module>platform/audit-service</module>
     <module>contracts/customer-consumer-example</module>
+    <module>integration/crm-adapter</module>
   </modules>
 </project>
