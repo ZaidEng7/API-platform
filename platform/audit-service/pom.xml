@@ -123,9 +123,15 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Brings spring-security-test (@WithMockUser) AND, critically,
+         spring-boot-security-test's SecurityMockMvcAutoConfiguration —
+         without it, @AutoConfigureMockMvc no longer wires Spring Security's
+         test support into MockMvc automatically under Boot 4's modularized
+         test autoconfiguration, so @WithMockUser silently has no effect and
+         every request looks anonymous. -->
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-test</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
