@@ -475,6 +475,51 @@ jobs:
           kubectl describe pod -l app.kubernetes.io/name=gateway
           kubectl logs -l app.kubernetes.io/name=gateway --tail=200 || true
 
+  pact-contract-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Start Pact Broker
+        run: docker compose -f deployment/docker/pact-broker.yml up -d
+
+      - name: Wait for Pact Broker to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9292/diagnostic/status/heartbeat > /dev/null; then
+              echo "Pact Broker ready"
+              break
+            fi
+            echo "Waiting for Pact Broker... ($i/30)"
+            sleep 3
+          done
+          curl -sf http://localhost:9292/diagnostic/status/heartbeat
+
+      - name: Install reactor dependencies
+        run: mvn -q install -DskipTests
+
+      - name: Run consumer test and publish the pact (template — see contracts/README.md)
+        run: mvn -q -pl contracts/customer-consumer-example test pact:publish
+
+      - name: Verify the provider against the published pact (template)
+        run: mvn -q -pl services/customer-service test -Ppact-verification
+
+      - name: Show Pact Broker logs on failure
+        if: failure()
+        run: docker compose -f deployment/docker/pact-broker.yml logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f deployment/docker/pact-broker.yml down
+
   container-scan-and-publish:
     runs-on: ubuntu-latest
     permissions:

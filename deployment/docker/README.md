@@ -29,3 +29,12 @@ Same compose file brings up OpenSearch and OpenSearch Dashboards too.
 - **OpenSearch** — `http://localhost:9200` (single-node, security plugin disabled — dev/local only, never in a real deployment).
 - **OpenSearch Dashboards** — `http://localhost:5601`.
 - Services write masked JSON logs to a local rolling file (`shared/common-logging`'s README) in addition to console. **No shipper is wired up yet** — see that README's "Known limitations" for why Filebeat was deliberately not used and what the real options are. This increment stands up and verifies the backend (cluster health, index/search round-trip, Dashboards reachable); getting logs from disk into it is follow-up work.
+
+## Contract testing (Pact Broker)
+
+```bash
+docker compose -f deployment/docker/pact-broker.yml up -d
+```
+
+- **Pact Broker** — `http://localhost:9292`, backed by its own Postgres (separate from any service's own DB). Public read enabled, no auth — dev/local only.
+- Scaffolding only: see `contracts/README.md` for what's actually wired up and what a real consumer needs to do to replace the template pair.
