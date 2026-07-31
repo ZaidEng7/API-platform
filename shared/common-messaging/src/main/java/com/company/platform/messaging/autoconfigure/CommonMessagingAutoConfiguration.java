@@ -6,6 +6,7 @@ import com.company.platform.messaging.outbox.OutboxEvent;
 import com.company.platform.messaging.outbox.OutboxEventStore;
 import com.company.platform.messaging.outbox.OutboxRelayPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,7 +38,9 @@ public class CommonMessagingAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper().findAndRegisterModules();
+        return new ObjectMapper()
+                .findAndRegisterModules()
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     @Bean
