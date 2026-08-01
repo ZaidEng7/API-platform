@@ -60,3 +60,8 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 - `confirmPayment`'s call to Portfolio Service is best-effort transactional: the local DB commit and the remote call aren't atomic. If the remote call fails, the local transaction rolls back and the subscription stays `AWAITING_PAYMENT` (safe to retry); the narrower risk is a partial-failure window where Portfolio Service's call *succeeds* but this service then fails to commit before returning. A production system would use an outbox-driven retry for this call too (the same pattern this service already uses for its own domain events), not built here to keep focus on the saga's own state machine.
 - No real Payment Service integration (see the saga description above).
 - No four-eyes/segregation-of-duties check for large redemptions (guide §12.2 mentions this) — not applicable yet since redemption itself isn't built.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/investment-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

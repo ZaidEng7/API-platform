@@ -40,7 +40,11 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 
 ## Known limitations
 
-- No real consumer of either `portfolio.*` event yet — Reporting Service and the Client Portal (§8.3: "Read copies allowed in") are the natural first ones.
 - No FX conversion in valuation (see above).
 - No investor self-service — an investor can view their own portfolios but can't open one or record a position themselves.
-- No Pact contract test between this service (consumer) and Fund Service (provider) yet, same open item Fund Service itself flagged for its own adapter relationship.
+- No Client Portal (§8.3: "Read copies allowed in" also names Client Portal alongside Reporting Service, which does now consume `portfolio.*` events — Client Portal itself isn't built anywhere in this platform).
+
+## Operations
+
+- **Runbook:** `docs/runbooks/portfolio-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

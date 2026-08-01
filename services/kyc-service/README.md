@@ -31,3 +31,8 @@ All require a role from `platform/identity/realm-export.json` once `KYC_SERVICE_
 - No real consumer of any `customer.kyc.*` event yet (Customer Service's own read model, per §8.3's "Read copies allowed in" column, is the natural first one).
 - `decidedBy` is only populated when the caller authenticates via a real JWT (`CurrentUser.subject()`) — stays `null` under the default open dev-mode chain or in tests using `@WithMockUser`, which doesn't produce a `JwtAuthenticationToken`.
 - No linkage back to Customer Service's own KYC-status read model — that's Customer Service's side of §8.3's "Read copies allowed in" column, not built yet.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/kyc-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

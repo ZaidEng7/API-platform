@@ -34,5 +34,9 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 ## Known limitations
 
 - No real consumer of either `fund.*` event yet — Portfolio Service and Reporting Service (§8.3: "Read copies allowed in") are the natural first ones.
-- No Pact contract test between this service (consumer) and `fund-mgmt-adapter` (provider) yet, despite this now being a real consumer relationship — worth adding once Portfolio/Reporting exist too, so the contract-testing investment covers more than one pairing.
 - `refreshNav` is manual/on-demand only — no scheduled poller. A real deployment would likely schedule this per the adapter's refresh SLA (its own fictional legacy system only republishes NAV once daily); adding that wasn't done here to avoid a timing-flaky test for a mechanism nothing yet depends on.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/fund-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

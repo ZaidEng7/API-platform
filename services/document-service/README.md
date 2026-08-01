@@ -32,3 +32,8 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 
 - No real consumer of any `customer.document.*` event yet — KYC Service is the natural first one (the guide's own rationale for this service existing).
 - No actual file upload/storage — see the rationale above. A real DMS adapter or object-store integration would populate/validate `storageReference`, not change this service's public contract.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/document-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).
