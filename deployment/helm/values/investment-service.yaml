@@ -18,8 +18,8 @@ env:
   RABBITMQ_HOST: rabbitmq
   RABBITMQ_PORT: "5672"
   CUSTOMER_SERVICE_URI: http://customer-service:8081
-  KYC_SERVICE_URI: http://kyc-service:8084
-  AML_SERVICE_URI: http://aml-service:8085
+  KYC_SERVICE_URI: http://kyc-service:8092
+  AML_SERVICE_URI: http://aml-service:8093
   PORTFOLIO_SERVICE_URI: http://portfolio-service:8088
 
 envFrom:

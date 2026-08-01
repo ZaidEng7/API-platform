@@ -27,7 +27,7 @@ spring:
           issuer-uri: ${DOCUMENT_SERVICE_JWT_ISSUER_URI:}
 
 server:
-  port: ${SERVER_PORT:8086}
+  port: ${SERVER_PORT:8094}
 
 management:
   metrics:

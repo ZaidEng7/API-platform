@@ -8,8 +8,8 @@ image:
   repository: aml-service
 
 service:
-  port: 8085
-  targetPort: 8085
+  port: 8093
+  targetPort: 8093
 
 env:
   DB_HOST: aml-service-postgres

@@ -13,19 +13,19 @@ spring:
               filters:
                 - StripPrefix=0
             - id: kyc-service
-              uri: ${KYC_SERVICE_URI:http://localhost:8084}
+              uri: ${KYC_SERVICE_URI:http://localhost:8092}
               predicates:
                 - Path=/api/v1/kyc-checks/**
               filters:
                 - StripPrefix=0
             - id: aml-service
-              uri: ${AML_SERVICE_URI:http://localhost:8085}
+              uri: ${AML_SERVICE_URI:http://localhost:8093}
               predicates:
                 - Path=/api/v1/aml/**
               filters:
                 - StripPrefix=0
             - id: document-service
-              uri: ${DOCUMENT_SERVICE_URI:http://localhost:8086}
+              uri: ${DOCUMENT_SERVICE_URI:http://localhost:8094}
               predicates:
                 - Path=/api/v1/documents/**
               filters:

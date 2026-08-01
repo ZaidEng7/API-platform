@@ -27,7 +27,7 @@ spring:
           issuer-uri: ${AML_SERVICE_JWT_ISSUER_URI:}
 
 server:
-  port: ${SERVER_PORT:8085}
+  port: ${SERVER_PORT:8093}
 
 management:
   metrics:

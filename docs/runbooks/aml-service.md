@@ -1,6 +1,6 @@
 # AML Service Runbook
 
-System of Record for AML screening status (guide §8.3), "compliance gate for money movement" alongside KYC. Async by design (§10.3): `POST /api/v1/aml/screenings` → `202 Accepted`, poll `GET .../{id}`. Port 8085.
+System of Record for AML screening status (guide §8.3), "compliance gate for money movement" alongside KYC. Async by design (§10.3): `POST /api/v1/aml/screenings` → `202 Accepted`, poll `GET .../{id}`. Port 8093.
 
 **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).
 
