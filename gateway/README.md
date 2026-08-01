@@ -23,6 +23,16 @@ This is deliberately a plain proxying `@RestController`, not a declarative Sprin
 
 Open `/canary-demo.html` (served as a static resource by this module) for an interactive view — call the endpoint repeatedly and watch the target tally, or change the weight and see the split shift on the next call with no restart.
 
+## API catalog
+
+Guide §7.28/Phase 7's "start with the OpenAPI specs + Swagger UI aggregation" step: every business service already exposes its own `/v3/api-docs` and `swagger-ui.html` (springdoc, annotated per-controller since the Phase 5 exit criteria work), but each was only reachable standalone, service by service. This module now aggregates all nine into one page:
+
+- `/api-docs/<service>/**` routes (e.g. `/api-docs/customer-service/v3/api-docs`) proxy each service's own `/v3/api-docs`, rewriting the path so the service itself needs no changes.
+- `springdoc.swagger-ui.urls` (see `application.yml`) lists all nine plus this Gateway's own spec (which now includes the Phase 6 canary endpoints, annotated the same way) in one dropdown at `/swagger-ui.html`.
+- This is genuinely just aggregation, not a full developer portal (Backstage or a vendor tool) — that's explicitly a *later*, separate Phase 7 step per the guide, not done here.
+- **Known limitation**: "Try it out" in the aggregated view calls whatever server URL each service's own OpenAPI spec advertises (its own direct address, e.g. `http://localhost:8081`) — not back through this Gateway's proxy path. Browsing/reading specs works correctly either way; only live in-browser test calls are affected. Not fixed here — would need each service's springdoc to pick up `X-Forwarded-*` headers (Spring Cloud Gateway sends some by default, but not a forwarded path prefix for this proxy shape) to advertise the Gateway-reachable URL instead.
+- Once Identity's `issuer-uri` is configured, all of these paths fall under `SecurityConfig`'s default `anyExchange().authenticated()` — no explicit `permitAll` was added for docs, since this is an internal catalog, not a public one.
+
 ## Known limitations
 
 - No rate limiting / API key validation for partners yet.

@@ -110,6 +110,7 @@ Build order is dependency-driven — do not reorder without an ADR:
 - [ ] Service mesh — only if mTLS/traffic management outgrows current setup
 - [ ] Workflow orchestration engine
 - [ ] GraphQL aggregation (optional, portal-driven)
+- [x] **API catalog (first step)** — the Gateway now aggregates all nine business services' existing springdoc `/v3/api-docs` into one Swagger UI (`/swagger-ui.html`), via new `/api-docs/<service>/**` proxy routes + `springdoc.swagger-ui.urls`. This is the guide's own explicitly-named starting point ("start with the OpenAPI specs + Swagger UI aggregation") — not the "Developer portal (Backstage or vendor)" item below, which is a distinct, later step. See `gateway/README.md`'s "API catalog" section for scope and the one known limitation ("Try it out" hits each service's own direct address, not the Gateway proxy path).
 - [ ] Developer portal (Backstage or vendor) + self-service partner onboarding
 - [ ] API analytics, AI-assisted docs/anomaly detection
 

@@ -1,5 +1,7 @@
 package com.company.gateway.canary;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * partner consumers Phase 6 actually migrates — none of those exist in
  * this repo (see {@code docs/roadmap.md} Phase 6).
  */
+@Tag(name = "Customer Lookup Canary", description = "Phase 6 demo: weighted-canary proxy between Customer Service (migrated) and crm-adapter (legacy)")
 @RestController
 @RequestMapping("/api/v1/customer-lookup")
 public class CustomerLookupCanaryController {
@@ -51,6 +54,7 @@ public class CustomerLookupCanaryController {
         this.crmAdapterBaseUrl = crmAdapterBaseUrl;
     }
 
+    @Operation(summary = "Look up a customer by id, weighted-routed to Customer Service or crm-adapter", description = "Response carries X-Canary-Target so callers can see which backend actually answered.")
     @GetMapping("/{id}")
     public Mono<ResponseEntity<String>> lookup(@PathVariable String id) {
         boolean useLegacy = ThreadLocalRandom.current().nextInt(100) < weightRegistry.getLegacyWeightPercent(MIGRATION_ID);
