@@ -54,6 +54,12 @@ spring:
                 - Path=/api/v1/payments/**
               filters:
                 - StripPrefix=0
+            - id: reporting-service
+              uri: ${REPORTING_SERVICE_URI:http://localhost:8091}
+              predicates:
+                - Path=/api/v1/reports/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':

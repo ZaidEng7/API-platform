@@ -1,0 +1,27 @@
+# Service-specific values for Reporting Service. See gateway.yaml for the
+# full install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: reporting-service
+
+image:
+  repository: reporting-service
+
+service:
+  port: 8091
+  targetPort: 8091
+
+env:
+  DB_HOST: reporting-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: reporting_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+
+envFrom:
+  - secretRef:
+      name: reporting-service-db
+      optional: true
+  - secretRef:
+      name: reporting-service-rabbitmq
+      optional: true
