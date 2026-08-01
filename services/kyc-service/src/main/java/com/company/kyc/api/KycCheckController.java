@@ -8,6 +8,8 @@ import com.company.kyc.application.KycCheckApplicationService;
 import com.company.kyc.domain.KycCheck;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +30,7 @@ import java.util.UUID;
  * restricted to it alone. Reads and requesting a check are open to the
  * staff roles that would plausibly initiate/track one.
  */
+@Tag(name = "KYC Checks", description = "KYC status System of Record (guide §8.3)")
 @RestController
 @RequestMapping("/api/v1/kyc-checks")
 public class KycCheckController {
@@ -40,12 +43,14 @@ public class KycCheckController {
         this.kycCheckMapper = kycCheckMapper;
     }
 
+    @Operation(summary = "Get a KYC check by id")
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
     public ApiResponse<KycCheckResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(kycCheckMapper.toResponse(kycCheckApplicationService.getById(id)));
     }
 
+    @Operation(summary = "List KYC checks for a customer")
     @GetMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
     public ApiResponse<List<KycCheckResponse>> listByCustomer(
@@ -60,6 +65,7 @@ public class KycCheckController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Request a new KYC check for a customer")
     @PostMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE')")
     public ResponseEntity<ApiResponse<KycCheckResponse>> requestCheck(@Valid @RequestBody RequestKycCheckRequest request) {
@@ -69,6 +75,7 @@ public class KycCheckController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Record a compliance decision (approve/reject) on a KYC check, once only")
     @PostMapping("/{id}/decision")
     @PreAuthorize("hasRole('COMPLIANCE')")
     public ApiResponse<KycCheckResponse> decide(@PathVariable UUID id, @Valid @RequestBody KycDecisionRequest request) {

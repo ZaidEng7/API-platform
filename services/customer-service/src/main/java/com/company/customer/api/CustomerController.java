@@ -8,6 +8,8 @@ import com.company.customer.application.CustomerApplicationService;
 import com.company.customer.domain.Customer;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +22,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Customers", description = "Party / Customer System of Record (guide §8.3)")
 @RestController
 @RequestMapping("/api/v1/customers")
 public class CustomerController {
@@ -32,11 +35,13 @@ public class CustomerController {
         this.customerMapper = customerMapper;
     }
 
+    @Operation(summary = "Get a customer by id")
     @GetMapping("/{id}")
     public ApiResponse<CustomerResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(customerMapper.toResponse(customerApplicationService.getById(id)));
     }
 
+    @Operation(summary = "Search customers by full name or email")
     @GetMapping
     public ApiResponse<List<CustomerResponse>> search(
             @RequestParam(required = false) String query,
@@ -50,6 +55,7 @@ public class CustomerController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Create a new customer and publish customer.party.created")
     @PostMapping
     public ResponseEntity<ApiResponse<CustomerResponse>> create(@Valid @RequestBody CreateCustomerRequest request) {
         var customer = customerApplicationService.create(request.fullName(), request.email(), request.phone(),
@@ -59,6 +65,7 @@ public class CustomerController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Update a customer's mutable profile fields and publish customer.party.updated")
     @PutMapping("/{id}")
     public ApiResponse<CustomerResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateCustomerRequest request) {
         var customer = customerApplicationService.update(id, request.fullName(), request.phone(), request.dateOfBirth());

@@ -11,6 +11,8 @@ import com.company.portfolio.domain.Portfolio;
 import com.company.portfolio.domain.Position;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +34,7 @@ import java.util.UUID;
  * {@link com.company.platform.security.CurrentUser}'s own Javadoc
  * describes. Writes are staff-only — no investor self-service flow yet.
  */
+@Tag(name = "Portfolios", description = "Portfolio positions System of Record (guide §8.3)")
 @RestController
 @RequestMapping("/api/v1/portfolios")
 public class PortfolioController {
@@ -47,12 +50,14 @@ public class PortfolioController {
         this.portfolioMapper = portfolioMapper;
     }
 
+    @Operation(summary = "Get a portfolio by id (ownership-enforced for an Investor caller)")
     @GetMapping("/{id}")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<PortfolioResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(portfolioMapper.toResponse(portfolioApplicationService.getById(id)));
     }
 
+    @Operation(summary = "List portfolios for an owner")
     @GetMapping
     @PreAuthorize(READ_ROLES)
     public ApiResponse<List<PortfolioResponse>> listByOwner(
@@ -67,6 +72,7 @@ public class PortfolioController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Open a new portfolio account")
     @PostMapping
     @PreAuthorize(WRITE_ROLES)
     public ResponseEntity<ApiResponse<PortfolioResponse>> openPortfolio(@Valid @RequestBody OpenPortfolioRequest request) {
@@ -77,6 +83,7 @@ public class PortfolioController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "List positions held in a portfolio")
     @GetMapping("/{id}/positions")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<List<PositionResponse>> listPositions(
@@ -91,6 +98,7 @@ public class PortfolioController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Record a position (fund holding) into a portfolio")
     @PostMapping("/{id}/positions")
     @PreAuthorize(WRITE_ROLES)
     public ResponseEntity<ApiResponse<PositionResponse>> recordPosition(@PathVariable UUID id,
@@ -101,6 +109,7 @@ public class PortfolioController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Value a portfolio by pricing each held position against Fund Service's latest NAV")
     @GetMapping("/{id}/valuation")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<PortfolioValuationResponse> valuate(@PathVariable UUID id) {
