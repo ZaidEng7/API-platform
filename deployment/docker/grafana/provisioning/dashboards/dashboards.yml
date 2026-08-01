@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: 'Phase 5 exit-criteria dashboards'
+  - name: 'Platform dashboards'
     orgId: 1
-    folder: 'Phase 5 Services'
+    folder: 'Platform'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 30
