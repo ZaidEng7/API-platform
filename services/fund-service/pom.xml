@@ -22,6 +22,7 @@
     <java.version>21</java.version>
     <mapstruct.version>1.6.3</mapstruct.version>
     <pact.version>4.7.3</pact.version>
+    <pact.broker.url>http://localhost:9292</pact.broker.url>
   </properties>
 
   <dependencyManagement>
@@ -183,6 +184,20 @@
                Portfolio Service's pact already published — only true in the
                dedicated pact-contract-verification CI job. -->
           <excludedGroups>pact</excludedGroups>
+        </configuration>
+      </plugin>
+      <!-- `mvn pact:publish` — pushes target/pacts/*.json (written by
+           FundNavClientPactTest) to the broker in
+           deployment/docker/pact-broker.yml. Only invoked by the dedicated
+           pact-contract-verification CI job, not the default build. -->
+      <plugin>
+        <groupId>au.com.dius.pact.provider</groupId>
+        <artifactId>maven</artifactId>
+        <version>${pact.version}</version>
+        <configuration>
+          <pactBrokerUrl>${pact.broker.url}</pactBrokerUrl>
+          <projectVersion>${project.version}</projectVersion>
+          <trimSnapshot>true</trimSnapshot>
         </configuration>
       </plugin>
       <plugin>
