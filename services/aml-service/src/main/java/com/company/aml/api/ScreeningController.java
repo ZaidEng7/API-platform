@@ -9,6 +9,8 @@ import com.company.aml.application.AmlScreeningApplicationService;
 import com.company.aml.domain.AmlScreening;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +33,7 @@ import java.util.UUID;
  * controller: "compliance" owns the sign-off (here: the CLEAR/HIT result),
  * "operations" owns marking a screening technically FAILED.
  */
+@Tag(name = "AML Screenings", description = "AML screening System of Record (guide §8.3)")
 @RestController
 @RequestMapping("/api/v1/aml/screenings")
 public class ScreeningController {
@@ -44,12 +47,14 @@ public class ScreeningController {
         this.screeningMapper = screeningMapper;
     }
 
+    @Operation(summary = "Get an AML screening by id")
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
     public ApiResponse<ScreeningResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(screeningMapper.toResponse(amlScreeningApplicationService.getById(id)));
     }
 
+    @Operation(summary = "List AML screenings for a customer")
     @GetMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
     public ApiResponse<List<ScreeningResponse>> listByCustomer(
@@ -64,6 +69,7 @@ public class ScreeningController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Request an AML screening for a customer (async — 202 Accepted, poll GET .../{id})")
     @PostMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE')")
     public ResponseEntity<ApiResponse<ScreeningResponse>> requestScreening(@Valid @RequestBody RequestScreeningRequest request) {
@@ -74,6 +80,7 @@ public class ScreeningController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Record a compliance result (CLEAR/HIT) on a screening, once only")
     @PostMapping("/{id}/result")
     @PreAuthorize("hasRole('COMPLIANCE')")
     public ApiResponse<ScreeningResponse> recordResult(@PathVariable UUID id, @Valid @RequestBody ScreeningResultRequest request) {
@@ -81,6 +88,7 @@ public class ScreeningController {
         return ApiResponse.of(screeningMapper.toResponse(screening));
     }
 
+    @Operation(summary = "Mark a screening technically failed (vendor/system failure, not a compliance outcome)")
     @PostMapping("/{id}/fail")
     @PreAuthorize("hasRole('OPERATIONS')")
     public ApiResponse<ScreeningResponse> recordFailure(@PathVariable UUID id, @Valid @RequestBody ScreeningFailureRequest request) {

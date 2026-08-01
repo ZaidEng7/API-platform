@@ -9,6 +9,8 @@ import com.company.payment.domain.Transfer;
 import com.company.platform.web.exception.ApiException;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +34,7 @@ import java.util.UUID;
  * staff broad, an authenticated Investor restricted to their own
  * ({@code ownerId}) transfers on reads.
  */
+@Tag(name = "Payments", description = "Payment / transfer status — interim System of Record (guide §8.3)")
 @RestController
 @RequestMapping("/api/v1/payments")
 public class TransferController {
@@ -47,12 +50,14 @@ public class TransferController {
         this.transferMapper = transferMapper;
     }
 
+    @Operation(summary = "Get a transfer by id (ownership-enforced for an Investor caller)")
     @GetMapping("/{id}")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<TransferResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(transferMapper.toResponse(transferApplicationService.getById(id)));
     }
 
+    @Operation(summary = "List transfers for an owner")
     @GetMapping
     @PreAuthorize(READ_ROLES)
     public ApiResponse<List<TransferResponse>> listByOwner(
@@ -76,6 +81,7 @@ public class TransferController {
      * every other validation failure — same approach Investment Service
      * established.
      */
+    @Operation(summary = "Request a transfer (async — 202 Accepted, poll GET .../{id} for settlement status)")
     @PostMapping
     @PreAuthorize(WRITE_ROLES)
     public ResponseEntity<ApiResponse<TransferResponse>> requestTransfer(
@@ -94,12 +100,14 @@ public class TransferController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Confirm a pending transfer settled (human/finance-ops confirmation, no real PSP callback)")
     @PostMapping("/{id}/settle")
     @PreAuthorize("hasRole('OPERATIONS')")
     public ApiResponse<TransferResponse> settle(@PathVariable UUID id) {
         return ApiResponse.of(transferMapper.toResponse(transferApplicationService.settle(id)));
     }
 
+    @Operation(summary = "Mark a pending transfer failed")
     @PostMapping("/{id}/fail")
     @PreAuthorize("hasRole('OPERATIONS')")
     public ApiResponse<TransferResponse> fail(@PathVariable UUID id, @Valid @RequestBody TransferFailureRequest request) {

@@ -9,6 +9,8 @@ import com.company.fund.domain.Fund;
 import com.company.fund.domain.NavSnapshot;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +30,7 @@ import java.util.List;
  * "operations" for administrative registration — same pairing pattern as
  * the other Phase 5 services' controllers.
  */
+@Tag(name = "Funds", description = "Fund / NAV System of Record (guide §8.3)")
 @RestController
 @RequestMapping("/api/v1/funds")
 public class FundController {
@@ -40,12 +43,14 @@ public class FundController {
         this.fundMapper = fundMapper;
     }
 
+    @Operation(summary = "Get a fund by its code")
     @GetMapping("/{fundCode}")
     @PreAuthorize("hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER', 'AUDITOR')")
     public ApiResponse<FundResponse> getByCode(@PathVariable String fundCode) {
         return ApiResponse.of(fundMapper.toResponse(fundApplicationService.getByCode(fundCode)));
     }
 
+    @Operation(summary = "List all registered funds")
     @GetMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER', 'AUDITOR')")
     public ApiResponse<List<FundResponse>> listFunds(
@@ -59,6 +64,7 @@ public class FundController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Register a new fund")
     @PostMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER')")
     public ResponseEntity<ApiResponse<FundResponse>> registerFund(@Valid @RequestBody RegisterFundRequest request) {
@@ -68,12 +74,14 @@ public class FundController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Get the most recent NAV snapshot for a fund")
     @GetMapping("/{fundCode}/nav")
     @PreAuthorize("hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER', 'AUDITOR')")
     public ApiResponse<NavSnapshotResponse> getLatestNav(@PathVariable String fundCode) {
         return ApiResponse.of(fundMapper.toResponse(fundApplicationService.getLatestNav(fundCode)));
     }
 
+    @Operation(summary = "List historical NAV snapshots for a fund")
     @GetMapping("/{fundCode}/nav-history")
     @PreAuthorize("hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER', 'AUDITOR')")
     public ApiResponse<List<NavSnapshotResponse>> getNavHistory(
@@ -88,6 +96,7 @@ public class FundController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Refresh a fund's NAV on demand by calling fund-mgmt-adapter")
     @PostMapping("/{fundCode}/nav/refresh")
     @PreAuthorize("hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER')")
     public ApiResponse<NavSnapshotResponse> refreshNav(@PathVariable String fundCode) {

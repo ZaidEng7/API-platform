@@ -8,6 +8,8 @@ import com.company.investment.domain.Subscription;
 import com.company.platform.web.exception.ApiException;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +30,7 @@ import java.util.UUID;
  * subscriptions on reads. Writes are staff-only — no investor
  * self-service, same known limitation Portfolio Service documented.
  */
+@Tag(name = "Subscriptions", description = "Fund subscription saga (guide §8.4)")
 @RestController
 @RequestMapping("/api/v1/subscriptions")
 public class SubscriptionController {
@@ -44,12 +47,14 @@ public class SubscriptionController {
         this.subscriptionMapper = subscriptionMapper;
     }
 
+    @Operation(summary = "Get a subscription by id (ownership-enforced for an Investor caller)")
     @GetMapping("/{id}")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<SubscriptionResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(subscriptionMapper.toResponse(subscriptionApplicationService.getById(id)));
     }
 
+    @Operation(summary = "List subscriptions for an owner")
     @GetMapping
     @PreAuthorize(READ_ROLES)
     public ApiResponse<List<SubscriptionResponse>> listByOwner(
@@ -72,6 +77,7 @@ public class SubscriptionController {
      * a precise 400) so a missing key gets the same RFC 7807 shape as
      * every other validation failure.
      */
+    @Operation(summary = "Request a fund subscription — runs the saga's synchronous validate/KYC/AML steps")
     @PostMapping
     @PreAuthorize(WRITE_ROLES)
     public ResponseEntity<ApiResponse<SubscriptionResponse>> requestSubscription(
@@ -88,12 +94,14 @@ public class SubscriptionController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Confirm payment on an awaiting-payment subscription, materializing the portfolio position")
     @PostMapping("/{id}/confirm-payment")
     @PreAuthorize(WRITE_ROLES)
     public ApiResponse<SubscriptionResponse> confirmPayment(@PathVariable UUID id) {
         return ApiResponse.of(subscriptionMapper.toResponse(subscriptionApplicationService.confirmPayment(id)));
     }
 
+    @Operation(summary = "Cancel an awaiting-payment subscription (the saga's compensating action)")
     @PostMapping("/{id}/cancel")
     @PreAuthorize(WRITE_ROLES)
     public ApiResponse<SubscriptionResponse> cancel(@PathVariable UUID id) {
