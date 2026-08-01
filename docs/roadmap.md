@@ -105,14 +105,14 @@ Build order is dependency-driven — do not reorder without an ADR:
 
 ## Phase 7 — Optimization (continuous)
 
-- [ ] Kafka decision (event streaming) — only if replay/streaming needs justify it
-- [ ] Distributed caching strategy
-- [ ] Service mesh — only if mTLS/traffic management outgrows current setup
-- [ ] Workflow orchestration engine
-- [ ] GraphQL aggregation (optional, portal-driven)
+- [x] **Kafka decision (event streaming)** — [ADR 0002](adr/0002-event-streaming-kafka-decision.md): stay on RabbitMQ. No replay/streaming/throughput need has ever emerged in this platform (Reporting Service's read models are built by plain consume-and-upsert, not replay); revisit criteria documented in the ADR.
+- [x] **Distributed caching strategy** — [ADR 0003](adr/0003-distributed-caching-strategy.md): strategy documented, not built. Only cache in the platform today (`fund-mgmt-adapter`'s per-instance Caffeine NAV cache) already tolerates its own staleness window by design; Redis via Spring's Cache abstraction is the pre-agreed mechanism for whenever a service actually needs cross-instance cache consistency.
+- [x] **Service mesh** — [ADR 0004](adr/0004-service-mesh-decision.md): not adopted. Directly follows from ADR 0001's own flagged mTLS gap — no persistent multi-node cluster exists yet to run a mesh on; revisit criteria documented in the ADR.
+- [x] **Workflow orchestration engine** — [ADR 0005](adr/0005-workflow-orchestration-decision.md): not adopted. Investment Service's one saga (one async step + a scheduled timeout job) doesn't warrant an engine; revisit criteria documented in the ADR.
+- [x] **GraphQL aggregation** — [ADR 0006](adr/0006-graphql-aggregation-decision.md): not adopted, per the guide's own "optional, portal-driven" framing — no real Web/Client Portal exists in this platform to aggregate data for.
 - [x] **API catalog (first step)** — the Gateway now aggregates all nine business services' existing springdoc `/v3/api-docs` into one Swagger UI (`/swagger-ui.html`), via new `/api-docs/<service>/**` proxy routes + `springdoc.swagger-ui.urls`. This is the guide's own explicitly-named starting point ("start with the OpenAPI specs + Swagger UI aggregation") — not the "Developer portal (Backstage or vendor)" item below, which is a distinct, later step. See `gateway/README.md`'s "API catalog" section for scope and the one known limitation ("Try it out" hits each service's own direct address, not the Gateway proxy path).
-- [ ] Developer portal (Backstage or vendor) + self-service partner onboarding
-- [ ] API analytics, AI-assisted docs/anomaly detection
+- [x] **Developer portal (Backstage or vendor) + self-service partner onboarding** — [ADR 0007](adr/0007-developer-portal-partner-onboarding-decision.md): the Swagger UI aggregation above is the interim developer-facing catalog; full Backstage and partner self-service onboarding both deferred until a real partner ecosystem exists (there is none today) — when one does, the ADR recommends reusing ADR 0001's OAuth2 Client Credentials pattern rather than a separate API-key system.
+- [x] **API analytics** — new **API Analytics** Grafana dashboard (`deployment/docker/grafana/provisioning/dashboards/json/api-analytics.json`): top 10 endpoints by request rate, top 10 by error rate, and request/error rate by service, built entirely on metrics every service already exports. **"AI-assisted docs/anomaly detection" is explicitly deferred, not built** — no ML/anomaly-detection infrastructure exists anywhere in this platform yet.
 
 ---
 
