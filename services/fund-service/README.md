@@ -35,6 +35,7 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 
 - No real consumer of either `fund.*` event yet — Portfolio Service and Reporting Service (§8.3: "Read copies allowed in") are the natural first ones.
 - `refreshNav` is manual/on-demand only — no scheduled poller. A real deployment would likely schedule this per the adapter's refresh SLA (its own fictional legacy system only republishes NAV once daily); adding that wasn't done here to avoid a timing-flaky test for a mechanism nothing yet depends on.
+- `FundNavClient`'s call to `fund-mgmt-adapter` does **not** carry a service-to-service credential — deliberately, per ADR 0001 (`docs/adr/0001-service-to-service-authentication.md`): that's a legacy-adapter boundary, not a peer-service call, and out of scope for that decision. Portfolio/Investment Service's own calls to *other business services* do carry one.
 
 ## Operations
 

@@ -1,6 +1,8 @@
 package com.company.platform.security.autoconfigure;
 
 import com.company.platform.security.jwt.KeycloakRealmRoleConverter;
+import com.company.platform.security.serviceauth.ServiceAuthRequestInterceptor;
+import com.company.platform.security.serviceauth.ServiceAuthTokenProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -61,5 +63,28 @@ public class CommonSecurityAutoConfiguration {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(new KeycloakRealmRoleConverter());
         return converter;
+    }
+
+    /**
+     * Always registered, like {@link #apiSecurityFilterChain}: a no-op
+     * (never fetches a token) unless {@code issuer-uri} and the service
+     * client secret are both configured (ADR 0001) — reuses this service's
+     * own resource-server {@code issuer-uri}, since a service already
+     * trusts that realm for incoming requests and can fetch its own
+     * outbound token from the same one.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public ServiceAuthTokenProvider serviceAuthTokenProvider(
+            @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}") String issuerUri,
+            @Value("${platform.security.service-auth.client-id:api-platform-services}") String clientId,
+            @Value("${platform.security.service-auth.client-secret:}") String clientSecret) {
+        return new ServiceAuthTokenProvider(issuerUri, clientId, clientSecret);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ServiceAuthRequestInterceptor serviceAuthRequestInterceptor(ServiceAuthTokenProvider serviceAuthTokenProvider) {
+        return new ServiceAuthRequestInterceptor(serviceAuthTokenProvider);
     }
 }

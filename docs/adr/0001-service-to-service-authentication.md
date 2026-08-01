@@ -1,6 +1,6 @@
 # ADR 0001: Service-to-service authentication
 
-**Status:** Proposed
+**Status:** Accepted, implemented
 **Date:** 2026-08-01
 
 ## Context
@@ -49,3 +49,11 @@ Use OAuth2 Client Credentials against the existing `api-platform-services` clien
 - Does **not** solve mTLS/transport-level trust (guide §8.1's literal ask) — a compromised service still can't be distinguished from a compromised client secret holder at the network layer. That remains real infrastructure work, tracked separately, not solved by this ADR.
 - Does **not** cover `fund-mgmt-adapter` (a legacy-system adapter, not a peer platform service) — that boundary's authentication, if any, is a Phase 4/legacy-integration concern, out of scope here.
 - The service account's `operations` role is broad by design (matches every downstream gate that exists today) — as more granular per-relationship authorization needs emerge (e.g. "only Investment Service may call Portfolio Service's position-recording endpoint"), a single shared service account stops being precise enough, and per-service client identities become the natural next step. Not built now because no such need exists yet.
+
+## Implementation
+
+- `shared/common-security`: `ServiceAuthTokenProvider` (Client Credentials token fetch/cache, via `AuthorizedClientServiceOAuth2AuthorizedClientManager` — not hand-rolled) and `ServiceAuthRequestInterceptor` (`ClientHttpRequestInterceptor`, attaches the Bearer header). Both always registered as beans (same "always on, no-op until configured" pattern as `CommonSecurityAutoConfiguration`'s own `SecurityFilterChain`), configured via `platform.security.service-auth.client-id`/`client-secret` plus the service's own existing `spring.security.oauth2.resourceserver.jwt.issuer-uri`.
+- Wired into the two relationships this ADR actually covers: Portfolio Service's `FundNavClient` → Fund Service, and Investment Service's four clients → Customer/KYC/AML/Portfolio Service.
+- **Not** wired into Fund Service's own call to `fund-mgmt-adapter` — out of scope per the "Decision" section above (legacy-adapter boundary, not a peer-service call).
+- No downstream role changes were needed: the `api-platform-services` service account already carries `operations`, which every affected `@PreAuthorize` gate already accepts.
+- Tests (`ServiceAuthTokenProviderTest`, `ServiceAuthRequestInterceptorTest`) prove the no-op default, token fetch, caching (a second call doesn't re-hit the token endpoint), and header attachment against a WireMock stub standing in for Keycloak's token endpoint — not against a real running Keycloak instance.
