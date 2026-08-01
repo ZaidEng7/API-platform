@@ -21,6 +21,7 @@
   <properties>
     <java.version>21</java.version>
     <mapstruct.version>1.6.3</mapstruct.version>
+    <pact.version>4.7.3</pact.version>
   </properties>
 
   <dependencyManagement>
@@ -130,6 +131,14 @@
       <artifactId>spring-boot-starter-security-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Pact provider verification — real pair, Investment Service is the
+         consumer (see contracts/README.md). -->
+    <dependency>
+      <groupId>au.com.dius.pact.provider</groupId>
+      <artifactId>spring7</artifactId>
+      <version>${pact.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -137,6 +146,16 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- KycServicePactVerificationTest needs the Pact Broker up with
+               Investment Service's pact already published — only true in
+               the dedicated pact-contract-verification CI job. -->
+          <excludedGroups>pact</excludedGroups>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -172,4 +191,25 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Activated by the pact-contract-verification CI job only (`mvn test
+         -Ppact-verification`) — see customer-service's own pom for why a
+         profile is used instead of a command-line -DexcludedGroups=. -->
+    <profile>
+      <id>pact-verification</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludedGroups combine.self="override"></excludedGroups>
+              <groups>pact</groups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

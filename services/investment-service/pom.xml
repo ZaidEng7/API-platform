@@ -21,6 +21,7 @@
   <properties>
     <java.version>21</java.version>
     <mapstruct.version>1.6.3</mapstruct.version>
+    <pact.version>4.7.3</pact.version>
   </properties>
 
   <dependencyManagement>
@@ -149,6 +150,16 @@
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
       <version>3.13.2</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- Pact consumer — Investment Service is the consumer of Customer/
+         KYC/AML/Portfolio Service in this saga (see contracts/README.md
+         for the real pairs); no provider dependency needed since nothing
+         consumes Investment Service's own API in a Pact pair (yet). -->
+    <dependency>
+      <groupId>au.com.dius.pact.consumer</groupId>
+      <artifactId>junit5</artifactId>
+      <version>${pact.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

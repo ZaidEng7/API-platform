@@ -1,32 +1,40 @@
 # Contract testing (Pact)
 
-This directory holds consumer-driven contract tests (guide §20). Right now it contains one thing: a **template**, not a real contract.
+Consumer-driven contract tests (guide §20) for every real internal REST relationship between our own services.
 
-## Why a template and not a real contract
+## Where the tests actually live
 
-There's no real typed API consumer in this codebase yet — the Gateway is a plain path-based reverse proxy, not code that calls another service's API and depends on its response shape. Pact tests express expectations a *real* consumer has of a *real* provider; fabricating one before a real consumer exists would just be asserting made-up behavior. So this scaffolds the tooling — broker, dependencies, CI wiring — plus one pair proving the whole pipeline actually works, clearly marked as a template.
+Unlike an earlier version of this directory (see git history), there's no separate `contracts/` module anymore — a fake standalone client only ever existed here because no real consumer existed yet. Now that real consumers exist, each Pact test lives directly in the service that's actually the consumer or provider:
 
-## What's here
+| Pair | Consumer test | Provider verification test |
+|---|---|---|
+| Fund Service → fund-mgmt-adapter | `services/fund-service/.../contract/FundNavClientPactTest.java` | `integration/fund-mgmt-adapter/.../contract/FundMgmtAdapterPactVerificationTest.java` |
+| Portfolio Service → Fund Service | `services/portfolio-service/.../contract/FundNavClientPactTest.java` | `services/fund-service/.../contract/FundServicePactVerificationTest.java` |
+| Investment Service → Customer Service | `services/investment-service/.../contract/CustomerServiceClientPactTest.java` | `services/customer-service/.../contract/CustomerServicePactVerificationTest.java` |
+| Investment Service → KYC Service | `services/investment-service/.../contract/KycCheckClientPactTest.java` | `services/kyc-service/.../contract/KycServicePactVerificationTest.java` |
+| Investment Service → AML Service | `services/investment-service/.../contract/AmlScreeningClientPactTest.java` | `services/aml-service/.../contract/AmlServicePactVerificationTest.java` |
+| Investment Service → Portfolio Service | `services/investment-service/.../contract/PortfolioPositionClientPactTest.java` | `services/portfolio-service/.../contract/PortfolioServicePactVerificationTest.java` |
 
-- `customer-consumer-example/` — a minimal HTTP client for `GET /api/v1/customers/{id}`, existing only so `CustomerServiceClientPactTest` has something to run the Pact consumer DSL against. Not a real service.
-- The provider side lives in `services/customer-service`: `CustomerServicePactVerificationTest` (package `com.company.customer.contract`), verifying the real `CustomerController` (with `CustomerApplicationService` stubbed, so no live DB is needed) against whatever's published to the broker.
-- `deployment/docker/pact-broker.yml` — the broker both sides talk to.
+Each pair asserts only what the real consumer's own client code actually depends on — response shape/status where the client parses the body, request/status only where it doesn't (see `PortfolioPositionClientPactTest`'s and `CustomerServiceClientPactTest`'s own Javadoc for concrete examples of this). Fund Service and Portfolio Service are each both a consumer and a provider in this set, so their own `pom.xml`s carry both `pact-consumer` and `pact-provider` dependencies.
 
-Both tests check response **shape only** (fields present, types line up) — not real business rules. That's intentional for a template; a real contract should assert whatever your actual consumer actually depends on.
+- `deployment/docker/pact-broker.yml` — the broker every consumer/provider test talks to.
+- Every provider verification test is tagged `@Tag("pact")` and excluded from each service's default `mvn test` run (see that service's own `pact-verification` Maven profile) — it needs the broker up and the matching consumer pact already published, which only the `pact-contract-verification` CI job guarantees.
 
 ## Running it locally
 
 ```bash
 docker compose -f ../deployment/docker/pact-broker.yml up -d
-mvn -pl customer-consumer-example test pact:publish   # from contracts/
-mvn -pl ../services/customer-service test -Ppact-verification
+mvn install -DskipTests   # populate the local reactor so cross-module pacts resolve
+
+# One example pair — repeat per row in the table above:
+mvn -pl services/fund-service test pact:publish
+mvn -pl integration/fund-mgmt-adapter test -Ppact-verification
 ```
 
-## Replacing the template with a real pair
+## Adding a new pair
 
-When a real consumer exists (e.g. the Web Portal, or a service that calls another service's API):
+When a new real consumer relationship appears (a service starts calling another service's API for the first time):
 
-1. Add a new module here (or reuse the consumer's own module) with its own `@Pact`-annotated interactions describing what that consumer *actually* depends on.
-2. Add a `@Provider("...")`-annotated verification test in the real provider service, tagged `@Tag("pact")` and excluded from its default surefire run the same way `CustomerServicePactVerificationTest` is (see that module's `pact-verification` Maven profile).
-3. Wire both into `.github/workflows/ci.yml`'s `pact-contract-verification` job (or a new job, if there are enough pairs to warrant a matrix).
-4. Delete `customer-consumer-example/` and `CustomerServicePactVerificationTest` once nothing depends on them as an example.
+1. In the consuming service's own test tree, add a `@Pact`-annotated consumer test exercising its real REST client class (not a fake one) — see any file in the table above for the pattern.
+2. In the providing service's own test tree, add a `@Provider(...)`-annotated verification test, tagged `@Tag("pact")`, with `@State` handlers matching the consumer's `.given(...)` text. If that service isn't a Pact provider yet, add `au.com.dius.pact.provider:spring7` (test scope) and the `pact-verification` Maven profile to its `pom.xml` (copy from `services/customer-service/pom.xml`).
+3. Wire both into `.github/workflows/ci.yml`'s `pact-contract-verification` job.

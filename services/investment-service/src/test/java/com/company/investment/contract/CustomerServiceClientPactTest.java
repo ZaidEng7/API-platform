@@ -1,4 +1,4 @@
-package com.company.contracts.customerconsumer;
+package com.company.investment.contract;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
@@ -7,23 +7,25 @@ import au.com.dius.pact.consumer.junit5.PactTestFor;
 import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
+import com.company.investment.infrastructure.client.CustomerServiceClient;
+import com.company.platform.web.exception.ApiException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * TEMPLATE contract test. Proves the Pact toolchain end to end (consumer DSL
- * here, provider verification in
- * services/customer-service's CustomerServicePactVerificationTest, both
- * publishing to/reading from the broker in
- * deployment/docker/pact-broker.yml) — it deliberately checks response
- * *shape* only, not real business rules. Replace this pair with your own
- * once a real consumer of customer-service exists; see ../../../README.md.
+ * Real consumer-side half of the Investment Service ↔ Customer Service leg
+ * of the subscription saga's "validate customer" step — Investment
+ * Service's own {@link CustomerServiceClient}. Provider verification lives
+ * in Customer Service's own {@code CustomerServicePactVerificationTest}
+ * (which replaces the template pact that used to stand in for this before
+ * a real consumer existed — see contracts/README.md history).
  */
 @ExtendWith(PactConsumerTestExt.class)
 class CustomerServiceClientPactTest {
@@ -31,7 +33,7 @@ class CustomerServiceClientPactTest {
     private static final UUID CUSTOMER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID UNKNOWN_CUSTOMER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
-    @Pact(consumer = "gateway-example-consumer", provider = "customer-service")
+    @Pact(consumer = "investment-service", provider = "customer-service")
     RequestResponsePact getCustomerById(PactDslWithProvider builder) {
         return builder
                 .given("a customer with id 11111111-1111-1111-1111-111111111111 exists")
@@ -55,7 +57,7 @@ class CustomerServiceClientPactTest {
                 .toPact();
     }
 
-    @Pact(consumer = "gateway-example-consumer", provider = "customer-service")
+    @Pact(consumer = "investment-service", provider = "customer-service")
     RequestResponsePact getUnknownCustomerById(PactDslWithProvider builder) {
         return builder
                 .given("no customer exists with id 22222222-2222-2222-2222-222222222222")
@@ -76,22 +78,17 @@ class CustomerServiceClientPactTest {
 
     @Test
     @PactTestFor(pactMethod = "getCustomerById", pactVersion = PactSpecVersion.V3)
-    void clientParsesCustomerResponse(MockServer mockServer) throws Exception {
-        var client = new CustomerServiceClient(mockServer.getUrl());
+    void clientDoesNotThrowWhenCustomerExists(MockServer mockServer) {
+        var client = new CustomerServiceClient(RestClient.builder().baseUrl(mockServer.getUrl()).build());
 
-        var customer = client.getById(CUSTOMER_ID);
-
-        assertEquals(CUSTOMER_ID, customer.id());
-        assertEquals("Ada Lovelace", customer.fullName());
-        assertEquals("ada@example.com", customer.email());
+        assertThatCode(() -> client.requireExists(CUSTOMER_ID)).doesNotThrowAnyException();
     }
 
     @Test
     @PactTestFor(pactMethod = "getUnknownCustomerById", pactVersion = PactSpecVersion.V3)
     void clientThrowsWhenCustomerNotFound(MockServer mockServer) {
-        var client = new CustomerServiceClient(mockServer.getUrl());
+        var client = new CustomerServiceClient(RestClient.builder().baseUrl(mockServer.getUrl()).build());
 
-        assertThrows(CustomerServiceClient.CustomerNotFoundException.class,
-                () -> client.getById(UNKNOWN_CUSTOMER_ID));
+        assertThatThrownBy(() -> client.requireExists(UNKNOWN_CUSTOMER_ID)).isInstanceOf(ApiException.class);
     }
 }
