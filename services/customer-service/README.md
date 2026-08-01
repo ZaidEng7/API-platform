@@ -33,3 +33,8 @@ Both carry a full `EventEnvelope` as the message payload. See `shared/common-mes
 - No auth yet (Identity/Keycloak lands later in Phase 3; this service wasn't in scope for Phase 3's identity wiring the way Audit Service was — revisit before any real deployment).
 - No audit writes yet from this service's own actions (Audit Service consumes domain events platform-wide, but doesn't distinguish "who changed this Customer" beyond what's in the event payload).
 - `PartyType` is a two-value enum (`INDIVIDUAL`/`ORGANIZATION`) with no organization-specific fields yet (e.g. registration number, beneficial owners) — add when a real consumer needs them, not speculatively.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/customer-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

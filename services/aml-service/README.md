@@ -33,3 +33,8 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 
 - No real consumer of any `customer.aml.*` event yet.
 - No real watchlist/sanctions vendor integration — see the module-level rationale above. When one is added (a Phase 4-style adapter), it would be the thing that eventually calls `POST .../result` or `.../fail` instead of a human, without needing to change this service's public contract.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/aml-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

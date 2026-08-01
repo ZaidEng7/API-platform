@@ -47,3 +47,8 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 - No real PSP integration — settlement is human-confirmed (see above).
 - No service-to-service authentication exists anywhere in this platform yet (the same documented, unresolved gap Investment Service's README flags) — not relevant to this service's own code today since it makes no outbound service calls, but relevant to whichever real PSP adapter is built on top of it later.
 - No refund/reversal flow — only forward settlement/failure, since no PSP integration exists to reverse against.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/payment-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

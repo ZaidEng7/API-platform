@@ -48,3 +48,8 @@ All require a role from `platform/identity/realm-export.json` once `REPORTING_SE
 - Position data is append-only (`position_view`) — this service doesn't attempt to net multiple position-recorded events into a single running quantity per fund. That aggregation is Portfolio Service's job as the actual System of Record; re-deriving it here would risk drifting from the source of truth.
 - No FX conversion, no time-series/historical NAV reporting, no PDF/CSV export, no scheduled report generation — the guide's own roadmap entry for this item ("9. Reporting Service") doesn't specify any of these, and none were invented speculatively.
 - Publishes no events of its own — terminal in the event flow, same as Audit Service.
+
+## Operations
+
+- **Runbook:** `docs/runbooks/reporting-service.md`.
+- **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).

@@ -1,0 +1,16 @@
+# Guide §25 exit criterion: "owning team named" — placeholder.
+#
+# @platform-engineering is not a real GitHub team; nobody will actually be
+# requested for review from this file as-is. Replace every line below with
+# the real owning team's GitHub handle once one is assigned per service —
+# see docs/phase-5-exit-criteria.md's "Owning team" section.
+
+/services/customer-service/    @platform-engineering
+/services/kyc-service/         @platform-engineering
+/services/aml-service/         @platform-engineering
+/services/document-service/    @platform-engineering
+/services/fund-service/        @platform-engineering
+/services/portfolio-service/   @platform-engineering
+/services/investment-service/  @platform-engineering
+/services/payment-service/     @platform-engineering
+/services/reporting-service/   @platform-engineering
