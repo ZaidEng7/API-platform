@@ -31,6 +31,14 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
     </dependency>
+    <!-- Client Credentials token acquisition/caching for service-to-service
+         calls (ADR 0001, docs/adr/0001-service-to-service-authentication.md)
+         — AuthorizedClientServiceOAuth2AuthorizedClientManager handles token
+         caching/refresh, not hand-rolled. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -54,6 +62,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>3.13.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -1,5 +1,6 @@
 package com.company.investment.infrastructure.client;
 
+import com.company.platform.security.serviceauth.ServiceAuthRequestInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.HttpClientSettings;
@@ -16,45 +17,45 @@ import java.time.Duration;
  * Service's and Portfolio Service's own client configs) connect/read
  * timeouts only, not the full §9.4 resilience table.
  *
- * <p><b>Known gap this surfaces:</b> none of these calls carry any
- * service-to-service credential. Guide §8.1 says service-to-service calls
- * should go through mTLS, which is a mesh/infrastructure concern this repo
- * doesn't provision — but in the meantime, KYC/AML/Portfolio Service's own
- * {@code @PreAuthorize} method-security gates deny *any* caller without a
- * role-bearing authentication, including a plain anonymous service call
- * with no Authorization header at all (Spring Security's
- * AnonymousAuthenticationFilter still populates a role-less principal even
- * when the surrounding filter chain permits the request through). So
- * today, these calls would be rejected with 403 the moment any of those
- * services' {@code issuer-uri} is actually configured — this saga hasn't
- * been run against a real secured deployment, only against WireMock stubs
- * in tests (which don't enforce security at all). See this module's
- * README.
+ * <p>Each carries a {@link ServiceAuthRequestInterceptor}, attaching an
+ * OAuth2 Client Credentials Bearer token (ADR 0001,
+ * {@code docs/adr/0001-service-to-service-authentication.md}) — closes the
+ * gap this class's own Javadoc used to describe as unresolved: KYC/AML/
+ * Portfolio/Customer Service's {@code @PreAuthorize} gates deny any caller
+ * without a role-bearing authentication, so an unauthenticated call would
+ * be rejected with 403 the moment any of those services' {@code issuer-uri}
+ * is configured for real. The interceptor is a no-op until this service's
+ * own {@code platform.security.service-auth.client-secret} is configured,
+ * so dev/test behavior is unchanged until then.
  */
 @Configuration
 public class ExternalServiceClientConfig {
 
     @Bean
-    public RestClient customerServiceRestClient(@Value("${customer-service.base-url}") String baseUrl) {
-        return restClient(baseUrl);
+    public RestClient customerServiceRestClient(@Value("${customer-service.base-url}") String baseUrl,
+                                                 ServiceAuthRequestInterceptor serviceAuthRequestInterceptor) {
+        return restClient(baseUrl, serviceAuthRequestInterceptor);
     }
 
     @Bean
-    public RestClient kycServiceRestClient(@Value("${kyc-service.base-url}") String baseUrl) {
-        return restClient(baseUrl);
+    public RestClient kycServiceRestClient(@Value("${kyc-service.base-url}") String baseUrl,
+                                            ServiceAuthRequestInterceptor serviceAuthRequestInterceptor) {
+        return restClient(baseUrl, serviceAuthRequestInterceptor);
     }
 
     @Bean
-    public RestClient amlServiceRestClient(@Value("${aml-service.base-url}") String baseUrl) {
-        return restClient(baseUrl);
+    public RestClient amlServiceRestClient(@Value("${aml-service.base-url}") String baseUrl,
+                                            ServiceAuthRequestInterceptor serviceAuthRequestInterceptor) {
+        return restClient(baseUrl, serviceAuthRequestInterceptor);
     }
 
     @Bean
-    public RestClient portfolioServiceRestClient(@Value("${portfolio-service.base-url}") String baseUrl) {
-        return restClient(baseUrl);
+    public RestClient portfolioServiceRestClient(@Value("${portfolio-service.base-url}") String baseUrl,
+                                                  ServiceAuthRequestInterceptor serviceAuthRequestInterceptor) {
+        return restClient(baseUrl, serviceAuthRequestInterceptor);
     }
 
-    private RestClient restClient(String baseUrl) {
+    private RestClient restClient(String baseUrl, ServiceAuthRequestInterceptor serviceAuthRequestInterceptor) {
         HttpClientSettings settings = HttpClientSettings.defaults()
                 .withConnectTimeout(Duration.ofSeconds(2))
                 .withReadTimeout(Duration.ofSeconds(5));
@@ -63,6 +64,7 @@ public class ExternalServiceClientConfig {
         return RestClient.builder()
                 .baseUrl(baseUrl)
                 .requestFactory(requestFactory)
+                .requestInterceptor(serviceAuthRequestInterceptor)
                 .build();
     }
 }

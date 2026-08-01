@@ -38,6 +38,10 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 
 `FundNavClient`'s call to Fund Service uses connect/read timeouts only, same rationale as Fund Service's own call to `fund-mgmt-adapter` — the callee is one of our own services, not a legacy system, so the full §9.4 resilience table doesn't apply directly.
 
+## Service-to-service authentication
+
+`FundNavClient`'s calls to Fund Service now attach an OAuth2 Client Credentials Bearer token via `common-security`'s `ServiceAuthRequestInterceptor` — see ADR 0001 (`docs/adr/0001-service-to-service-authentication.md`). A no-op until `platform.security.service-auth.client-secret` is configured.
+
 ## Known limitations
 
 - No FX conversion in valuation (see above).

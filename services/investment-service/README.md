@@ -25,11 +25,9 @@ Steps 1–3 run **synchronously** inside the initiating `POST` — all three dow
 
 `SubscriptionTimeoutJob` is a `@Scheduled` bean (reusing the same mechanism `common-messaging`'s own `OutboxRelayPublisher` already established in this codebase) that finds `AWAITING_PAYMENT` subscriptions past their `timeoutAt` and transitions them to `TIMED_OUT`, publishing `investment.subscription.timed-out` — the guide's "a stuck subscription must page someone, not silently rot" signal a real alerting pipeline would page on. `investment.subscription.timeout` (default `PT15M`) and `investment.subscription.timeout-check-interval-ms` (default 60000) are both configurable; `SubscriptionTimeoutJobIntegrationTest` shrinks both to prove the job really runs, not just that the code compiles.
 
-## ⚠️ Known gap: no service-to-service authentication
+## Service-to-service authentication
 
-**This is the most important limitation to understand before deploying this service for real.** None of the calls to Customer/KYC/AML/Portfolio Service carry any credential. Guide §8.1 says service-to-service calls should go through mTLS — a mesh/infrastructure concern this repo doesn't provision. But KYC/AML/Portfolio Service's own `@PreAuthorize` method-security gates deny *any* caller without a role-bearing authentication, including a plain anonymous service call with no `Authorization` header at all (Spring Security's `AnonymousAuthenticationFilter` still populates a role-less principal even when the surrounding filter chain permits the request through).
-
-**Concretely: the moment any of those three services' `issuer-uri` is configured for real, this saga's calls to them will be rejected with `403`.** This has not been exercised against a real secured deployment — only against WireMock stubs in tests, which don't enforce security at all. Building a real fix (a client-credentials service account, mTLS-based service identity, or some other trusted-caller mechanism) is a genuine, non-trivial capability this platform doesn't have yet and is worth its own ADR (guide §26: "significant choices... recorded in docs/adr/") rather than a quick patch here.
+Each of this service's four downstream `RestClient`s (Customer/KYC/AML/Portfolio Service) now attaches an OAuth2 Client Credentials Bearer token via `common-security`'s `ServiceAuthRequestInterceptor` — see ADR 0001 (`docs/adr/0001-service-to-service-authentication.md`) for why and `ExternalServiceClientConfig`'s own Javadoc for the wiring. It's a no-op (no header attached, same as before) until `platform.security.service-auth.client-secret` is configured, so nothing changes in dev/test until then. Not yet exercised against a real running Keycloak instance — only against a WireMock stub standing in for the token endpoint (`common-security`'s own tests) and against downstream services with `issuer-uri` unset (this service's own WireMock-based tests, which don't enforce security at all either way).
 
 ## Run locally
 
@@ -55,7 +53,7 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 
 ## Known limitations
 
-- No real service-to-service authentication (see above — this is the important one).
+- Service-to-service auth is wired but unverified against a real Keycloak instance (see above).
 - Redemption not built (see above).
 - `confirmPayment`'s call to Portfolio Service is best-effort transactional: the local DB commit and the remote call aren't atomic. If the remote call fails, the local transaction rolls back and the subscription stays `AWAITING_PAYMENT` (safe to retry); the narrower risk is a partial-failure window where Portfolio Service's call *succeeds* but this service then fails to commit before returning. A production system would use an outbox-driven retry for this call too (the same pattern this service already uses for its own domain events), not built here to keep focus on the saga's own state machine.
 - No real Payment Service integration (see the saga description above).

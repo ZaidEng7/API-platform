@@ -45,7 +45,7 @@ Published via the outbox pattern (`common-messaging`) on the `domain-events` top
 ## Known limitations
 
 - No real PSP integration — settlement is human-confirmed (see above).
-- No service-to-service authentication exists anywhere in this platform yet (the same documented, unresolved gap Investment Service's README flags) — not relevant to this service's own code today since it makes no outbound service calls, but relevant to whichever real PSP adapter is built on top of it later.
+- No outbound service-to-service authentication applies to this service today since it makes no outbound service calls (see ADR 0001, `docs/adr/0001-service-to-service-authentication.md`, and Investment Service's README for the two relationships it does cover) — relevant to whichever real PSP adapter is built on top of it later.
 - No refund/reversal flow — only forward settlement/failure, since no PSP integration exists to reverse against.
 
 ## Operations
