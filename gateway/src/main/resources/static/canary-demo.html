@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Customer Lookup Canary Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    .bar { display: flex; height: 24px; border-radius: 4px; overflow: hidden; margin: 0.5rem 0; }
+    .bar div { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; }
+    .new { background: #0e6e63; }
+    .legacy { background: #a33; }
+    .controls { margin: 1rem 0; }
+    input[type=number] { width: 4rem; }
+    .log { font-family: monospace; font-size: 0.8rem; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 0.5rem; }
+    button { margin-left: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Customer Lookup Canary Demo</h1>
+  <p>
+    Calls <code>GET /api/v1/customer-lookup/{id}</code> through the Gateway repeatedly.
+    Each response's <code>X-Canary-Target</code> header reveals whether Customer Service
+    (the migrated target) or <code>crm-adapter</code> (the legacy shadow path) actually
+    answered — see <code>docs/roadmap.md</code> Phase 6 and this Gateway's own README for
+    what this is and isn't demonstrating.
+  </p>
+
+  <div class="controls">
+    <label>Customer id to look up: <input id="customerId" value="1" size="10"></label>
+    <button id="callOnce">Call once</button>
+    <button id="callMany">Call 20 times</button>
+  </div>
+
+  <div class="controls">
+    <label>Legacy shadow weight (%): <input id="weightInput" type="number" min="0" max="100" value="0"></label>
+    <button id="setWeight">Set weight (admin)</button>
+    <span id="weightStatus"></span>
+  </div>
+
+  <div id="bar" class="bar"></div>
+  <p id="tally"></p>
+  <div id="log" class="log"></div>
+
+  <script>
+    let newCount = 0;
+    let legacyCount = 0;
+
+    function renderBar() {
+      const total = newCount + legacyCount;
+      const bar = document.getElementById('bar');
+      const tally = document.getElementById('tally');
+      bar.innerHTML = '';
+      if (total === 0) { tally.textContent = 'No calls yet.'; return; }
+      const newPct = Math.round((newCount / total) * 100);
+      const legacyPct = 100 - newPct;
+      if (newPct > 0) {
+        const d = document.createElement('div');
+        d.className = 'new';
+        d.style.width = newPct + '%';
+        d.textContent = newPct + '%';
+        bar.appendChild(d);
+      }
+      if (legacyPct > 0) {
+        const d = document.createElement('div');
+        d.className = 'legacy';
+        d.style.width = legacyPct + '%';
+        d.textContent = legacyPct + '%';
+        bar.appendChild(d);
+      }
+      tally.textContent = `${total} calls -- customer-service: ${newCount}, crm-adapter: ${legacyCount}`;
+    }
+
+    function log(line) {
+      const el = document.getElementById('log');
+      el.textContent = line + '\n' + el.textContent;
+    }
+
+    async function callOnce() {
+      const id = document.getElementById('customerId').value;
+      try {
+        const response = await fetch(`/api/v1/customer-lookup/${encodeURIComponent(id)}`);
+        const target = response.headers.get('X-Canary-Target') || 'unknown';
+        if (target === 'crm-adapter') { legacyCount++; } else { newCount++; }
+        log(`${new Date().toLocaleTimeString()} -- served by ${target} (status ${response.status})`);
+        renderBar();
+      } catch (err) {
+        log(`error: ${err}`);
+      }
+    }
+
+    document.getElementById('callOnce').addEventListener('click', callOnce);
+    document.getElementById('callMany').addEventListener('click', async () => {
+      for (let i = 0; i < 20; i++) {
+        await callOnce();
+      }
+    });
+
+    document.getElementById('setWeight').addEventListener('click', async () => {
+      const weight = document.getElementById('weightInput').value;
+      const status = document.getElementById('weightStatus');
+      try {
+        const response = await fetch(`/admin/canary/customer-lookup?legacyWeightPercent=${encodeURIComponent(weight)}`, {
+          method: 'POST'
+        });
+        if (response.ok) {
+          status.textContent = 'weight updated.';
+        } else {
+          status.textContent = `failed (status ${response.status}) -- requires an administrator token once auth is enabled.`;
+        }
+      } catch (err) {
+        status.textContent = `error: ${err}`;
+      }
+    });
+  </script>
+</body>
+</html>
