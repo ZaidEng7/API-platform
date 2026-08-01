@@ -27,7 +27,7 @@ spring:
           issuer-uri: ${KYC_SERVICE_JWT_ISSUER_URI:}
 
 server:
-  port: ${SERVER_PORT:8084}
+  port: ${SERVER_PORT:8092}
 
 management:
   metrics:

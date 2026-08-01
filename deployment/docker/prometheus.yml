@@ -15,17 +15,17 @@ scrape_configs:
   - job_name: kyc-service
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["host.docker.internal:8084"]
+      - targets: ["host.docker.internal:8092"]
 
   - job_name: aml-service
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["host.docker.internal:8085"]
+      - targets: ["host.docker.internal:8093"]
 
   - job_name: document-service
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["host.docker.internal:8086"]
+      - targets: ["host.docker.internal:8094"]
 
   - job_name: fund-service
     metrics_path: /actuator/prometheus

@@ -1,6 +1,6 @@
 # Document Service Runbook
 
-Target System of Record for "Documents" (guide §8.3: read copies "— references only"). Metadata-only — stores an opaque `storageReference` pointer, never file bytes; no real DMS/object-store integration exists behind it. Port 8086.
+Target System of Record for "Documents" (guide §8.3: read copies "— references only"). Metadata-only — stores an opaque `storageReference` pointer, never file bytes; no real DMS/object-store integration exists behind it. Port 8094.
 
 **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).
 

@@ -8,8 +8,8 @@ image:
   repository: document-service
 
 service:
-  port: 8086
-  targetPort: 8086
+  port: 8094
+  targetPort: 8094
 
 env:
   DB_HOST: document-service-postgres

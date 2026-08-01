@@ -8,8 +8,8 @@ image:
   repository: kyc-service
 
 service:
-  port: 8084
-  targetPort: 8084
+  port: 8092
+  targetPort: 8092
 
 env:
   DB_HOST: kyc-service-postgres

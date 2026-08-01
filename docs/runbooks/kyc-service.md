@@ -1,6 +1,6 @@
 # KYC Service Runbook
 
-System of Record for KYC status (guide §8.3). Deliberately no decisioning logic — a human Compliance reviewer supplies the actual outcome via `POST /{id}/decision`. Port 8084.
+System of Record for KYC status (guide §8.3). Deliberately no decisioning logic — a human Compliance reviewer supplies the actual outcome via `POST /{id}/decision`. Port 8092.
 
 **Owning team:** Platform Engineering (placeholder — see `docs/phase-5-exit-criteria.md`).
 

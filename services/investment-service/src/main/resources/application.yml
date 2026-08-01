@@ -29,9 +29,9 @@ spring:
 customer-service:
   base-url: ${CUSTOMER_SERVICE_URI:http://localhost:8081}
 kyc-service:
-  base-url: ${KYC_SERVICE_URI:http://localhost:8084}
+  base-url: ${KYC_SERVICE_URI:http://localhost:8092}
 aml-service:
-  base-url: ${AML_SERVICE_URI:http://localhost:8085}
+  base-url: ${AML_SERVICE_URI:http://localhost:8093}
 portfolio-service:
   base-url: ${PORTFOLIO_SERVICE_URI:http://localhost:8088}
 
