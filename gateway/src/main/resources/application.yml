@@ -48,6 +48,12 @@ spring:
                 - Path=/api/v1/subscriptions/**
               filters:
                 - StripPrefix=0
+            - id: payment-service
+              uri: ${PAYMENT_SERVICE_URI:http://localhost:8090}
+              predicates:
+                - Path=/api/v1/payments/**
+              filters:
+                - StripPrefix=0
           globalcors:
             cors-configurations:
               '[/**]':

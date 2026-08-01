@@ -14,6 +14,7 @@
 #   docker build --build-arg MODULE=services/fund-service --build-arg JAR_NAME=fund-service-1.0.0-SNAPSHOT.jar -t fund-service .
 #   docker build --build-arg MODULE=services/portfolio-service --build-arg JAR_NAME=portfolio-service-1.0.0-SNAPSHOT.jar -t portfolio-service .
 #   docker build --build-arg MODULE=services/investment-service --build-arg JAR_NAME=investment-service-1.0.0-SNAPSHOT.jar -t investment-service .
+#   docker build --build-arg MODULE=services/payment-service --build-arg JAR_NAME=payment-service-1.0.0-SNAPSHOT.jar -t payment-service .
 #   docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service .
 #   docker build --build-arg MODULE=integration/crm-adapter --build-arg JAR_NAME=crm-adapter-1.0.0-SNAPSHOT.jar -t crm-adapter .
 #   docker build --build-arg MODULE=integration/onboarding-adapter --build-arg JAR_NAME=onboarding-adapter-1.0.0-SNAPSHOT.jar -t onboarding-adapter .
