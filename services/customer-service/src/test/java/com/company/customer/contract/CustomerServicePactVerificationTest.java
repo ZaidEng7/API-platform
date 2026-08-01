@@ -27,17 +27,14 @@ import java.util.UUID;
 import static org.mockito.Mockito.when;
 
 /**
- * TEMPLATE provider verification — the customer-service half of the Pact
- * pair started by CustomerServiceClientPactTest in
- * contracts/customer-consumer-example. Verifies the real controller against
- * whatever pacts have been published to the broker
- * (deployment/docker/pact-broker.yml); the application service is stubbed
- * so this doesn't need a live database, matching this example's
- * shape-only scope. Excluded from the default `mvn verify` run (see the
- * "pact" excludedGroup in this module's surefire config) — it needs the
- * broker up and the consumer pact already published, which only the
- * dedicated "pact-contract-verification" CI job guarantees. Replace once a
- * real consumer/provider pair exists; see contracts/README.md.
+ * Provider verification for the real Investment Service ↔ Customer Service
+ * pair (guide's "validate customer" saga step) — verifies the real
+ * {@code CustomerController} against Investment Service's own
+ * {@code CustomerServiceClientPactTest}. This replaces the template pact
+ * that used to stand in here (a fabricated "gateway-example-consumer")
+ * before a real consumer of this service existed; see
+ * contracts/README.md's history for why a template came first. The
+ * application service is stubbed so this doesn't need a live database.
  */
 @Tag("pact")
 @Provider("customer-service")

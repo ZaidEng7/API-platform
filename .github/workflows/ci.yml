@@ -514,11 +514,27 @@ jobs:
       - name: Install reactor dependencies
         run: mvn -q install -DskipTests
 
-      - name: Run consumer test and publish the pact (template — see contracts/README.md)
-        run: mvn -q -pl contracts/customer-consumer-example test pact:publish
+      # Six real consumer/provider pairs — see contracts/README.md for the
+      # full table and why there's no separate contracts/ module anymore.
+      - name: Publish consumer pact — fund-service → fund-mgmt-adapter
+        run: mvn -q -pl services/fund-service test pact:publish
+      - name: Publish consumer pact — portfolio-service → fund-service
+        run: mvn -q -pl services/portfolio-service test pact:publish
+      - name: Publish consumer pacts — investment-service → customer/kyc/aml/portfolio-service
+        run: mvn -q -pl services/investment-service test pact:publish
 
-      - name: Verify the provider against the published pact (template)
+      - name: Verify provider — fund-mgmt-adapter
+        run: mvn -q -pl integration/fund-mgmt-adapter test -Ppact-verification
+      - name: Verify provider — fund-service
+        run: mvn -q -pl services/fund-service test -Ppact-verification
+      - name: Verify provider — customer-service
         run: mvn -q -pl services/customer-service test -Ppact-verification
+      - name: Verify provider — kyc-service
+        run: mvn -q -pl services/kyc-service test -Ppact-verification
+      - name: Verify provider — aml-service
+        run: mvn -q -pl services/aml-service test -Ppact-verification
+      - name: Verify provider — portfolio-service
+        run: mvn -q -pl services/portfolio-service test -Ppact-verification
 
       - name: Show Pact Broker logs on failure
         if: failure()

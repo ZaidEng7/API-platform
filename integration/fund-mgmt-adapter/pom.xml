@@ -24,6 +24,7 @@
          (upstream gap: resilience4j/resilience4j#2427 — the artifact
          exists but was left out of the BOM) — explicit version instead. -->
     <resilience4j.version>2.4.0</resilience4j.version>
+    <pact.version>4.7.3</pact.version>
   </properties>
 
   <dependencyManagement>
@@ -127,6 +128,16 @@
       <version>3.13.2</version>
       <scope>test</scope>
     </dependency>
+    <!-- Pact provider verification — real pair, Fund Service is the
+         consumer (see contracts/README.md). spring7, not junit5spring, to
+         match Spring Framework 7/Boot 4 (see customer-service's own pom
+         for why). -->
+    <dependency>
+      <groupId>au.com.dius.pact.provider</groupId>
+      <artifactId>spring7</artifactId>
+      <version>${pact.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -134,6 +145,16 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- FundMgmtAdapterPactVerificationTest needs the Pact Broker up
+               with the consumer's pact already published — only true in
+               the dedicated pact-contract-verification CI job. -->
+          <excludedGroups>pact</excludedGroups>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -156,4 +177,25 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Activated by the pact-contract-verification CI job only (`mvn test
+         -Ppact-verification`) — see customer-service's own pom for why a
+         profile is used instead of a command-line -DexcludedGroups=. -->
+    <profile>
+      <id>pact-verification</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludedGroups combine.self="override"></excludedGroups>
+              <groups>pact</groups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
