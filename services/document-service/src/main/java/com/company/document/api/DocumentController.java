@@ -8,6 +8,8 @@ import com.company.document.application.DocumentApplicationService;
 import com.company.document.domain.Document;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +31,7 @@ import java.util.UUID;
  * (KYC needs it)"). Uploading metadata is open to the staff roles that
  * would plausibly register one on a Party's behalf.
  */
+@Tag(name = "Documents", description = "Document metadata (guide §8.3 — references only, no file bytes)")
 @RestController
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
@@ -41,12 +44,14 @@ public class DocumentController {
         this.documentMapper = documentMapper;
     }
 
+    @Operation(summary = "Get a document's metadata by id")
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
     public ApiResponse<DocumentResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(documentMapper.toResponse(documentApplicationService.getById(id)));
     }
 
+    @Operation(summary = "List documents for a customer")
     @GetMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
     public ApiResponse<List<DocumentResponse>> listByCustomer(
@@ -61,6 +66,7 @@ public class DocumentController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Register a document's metadata (an opaque storage reference, never file bytes)")
     @PostMapping
     @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE')")
     public ResponseEntity<ApiResponse<DocumentResponse>> upload(@Valid @RequestBody UploadDocumentRequest request) {
@@ -70,6 +76,7 @@ public class DocumentController {
                 .body(ApiResponse.of(response));
     }
 
+    @Operation(summary = "Verify a document, once only")
     @PostMapping("/{id}/verify")
     @PreAuthorize("hasRole('COMPLIANCE')")
     public ApiResponse<DocumentResponse> verify(@PathVariable UUID id, @Valid @RequestBody DocumentReviewRequest request) {
@@ -77,6 +84,7 @@ public class DocumentController {
         return ApiResponse.of(documentMapper.toResponse(document));
     }
 
+    @Operation(summary = "Reject a document, once only")
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('COMPLIANCE')")
     public ApiResponse<DocumentResponse> reject(@PathVariable UUID id, @Valid @RequestBody DocumentReviewRequest request) {

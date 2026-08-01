@@ -13,6 +13,8 @@ import com.company.reporting.domain.PaymentTransferView;
 import com.company.reporting.domain.PortfolioView;
 import com.company.platform.web.response.ApiResponse;
 import com.company.platform.web.response.PageMeta;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +38,7 @@ import java.util.UUID;
  * there's deliberately no investor self-service ownership check here, unlike
  * Portfolio/Investment/Payment Service's own read endpoints.
  */
+@Tag(name = "Reports", description = "Read-only aggregated views over Fund/Portfolio/Payment events (guide §8.3)")
 @RestController
 @RequestMapping("/api/v1/reports")
 public class ReportingController {
@@ -50,6 +53,7 @@ public class ReportingController {
         this.reportingMapper = reportingMapper;
     }
 
+    @Operation(summary = "List fund NAV read-models")
     @GetMapping("/funds")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<List<FundNavResponse>> listFunds(
@@ -63,12 +67,14 @@ public class ReportingController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Get a fund's NAV read-model by code")
     @GetMapping("/funds/{fundCode}")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<FundNavResponse> getFund(@PathVariable String fundCode) {
         return ApiResponse.of(reportingMapper.toResponse(reportingQueryService.getFund(fundCode)));
     }
 
+    @Operation(summary = "List portfolio read-models for an owner")
     @GetMapping("/portfolios")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<List<PortfolioResponse>> listPortfolios(
@@ -83,6 +89,7 @@ public class ReportingController {
         return ApiResponse.of(data, meta);
     }
 
+    @Operation(summary = "Get a portfolio read-model with its recorded positions")
     @GetMapping("/portfolios/{portfolioId}")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<PortfolioDetailResponse> getPortfolio(@PathVariable UUID portfolioId) {
@@ -94,6 +101,7 @@ public class ReportingController {
                 positions));
     }
 
+    @Operation(summary = "List payment transfer read-models, optionally filtered by customer")
     @GetMapping("/payments")
     @PreAuthorize(READ_ROLES)
     public ApiResponse<List<PaymentTransferResponse>> listPayments(
