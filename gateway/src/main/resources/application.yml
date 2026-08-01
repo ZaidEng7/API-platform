@@ -60,6 +60,65 @@ spring:
                 - Path=/api/v1/reports/**
               filters:
                 - StripPrefix=0
+
+            # API catalog (guide §7.28, Phase 7): proxy each business
+            # service's own /v3/api-docs so the aggregated Swagger UI below
+            # (springdoc.swagger-ui.urls) can list all of them from one page,
+            # without any service needing to know about the others.
+            - id: customer-service-docs
+              uri: ${CUSTOMER_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api-docs/customer-service/**
+              filters:
+                - RewritePath=/api-docs/customer-service/(?<segment>.*), /${segment}
+            - id: kyc-service-docs
+              uri: ${KYC_SERVICE_URI:http://localhost:8092}
+              predicates:
+                - Path=/api-docs/kyc-service/**
+              filters:
+                - RewritePath=/api-docs/kyc-service/(?<segment>.*), /${segment}
+            - id: aml-service-docs
+              uri: ${AML_SERVICE_URI:http://localhost:8093}
+              predicates:
+                - Path=/api-docs/aml-service/**
+              filters:
+                - RewritePath=/api-docs/aml-service/(?<segment>.*), /${segment}
+            - id: document-service-docs
+              uri: ${DOCUMENT_SERVICE_URI:http://localhost:8094}
+              predicates:
+                - Path=/api-docs/document-service/**
+              filters:
+                - RewritePath=/api-docs/document-service/(?<segment>.*), /${segment}
+            - id: fund-service-docs
+              uri: ${FUND_SERVICE_URI:http://localhost:8087}
+              predicates:
+                - Path=/api-docs/fund-service/**
+              filters:
+                - RewritePath=/api-docs/fund-service/(?<segment>.*), /${segment}
+            - id: portfolio-service-docs
+              uri: ${PORTFOLIO_SERVICE_URI:http://localhost:8088}
+              predicates:
+                - Path=/api-docs/portfolio-service/**
+              filters:
+                - RewritePath=/api-docs/portfolio-service/(?<segment>.*), /${segment}
+            - id: investment-service-docs
+              uri: ${INVESTMENT_SERVICE_URI:http://localhost:8089}
+              predicates:
+                - Path=/api-docs/investment-service/**
+              filters:
+                - RewritePath=/api-docs/investment-service/(?<segment>.*), /${segment}
+            - id: payment-service-docs
+              uri: ${PAYMENT_SERVICE_URI:http://localhost:8090}
+              predicates:
+                - Path=/api-docs/payment-service/**
+              filters:
+                - RewritePath=/api-docs/payment-service/(?<segment>.*), /${segment}
+            - id: reporting-service-docs
+              uri: ${REPORTING_SERVICE_URI:http://localhost:8091}
+              predicates:
+                - Path=/api-docs/reporting-service/**
+              filters:
+                - RewritePath=/api-docs/reporting-service/(?<segment>.*), /${segment}
           globalcors:
             cors-configurations:
               '[/**]':
@@ -74,6 +133,36 @@ spring:
           # Empty by default: SecurityConfig stays fully open until this is set
           # (see platform/identity/README.md to point it at a local Keycloak).
           issuer-uri: ${GATEWAY_JWT_ISSUER_URI:}
+
+springdoc:
+  swagger-ui:
+    # API catalog (guide §7.28, Phase 7) — one browsable page listing every
+    # business service's own OpenAPI spec, proxied via the /api-docs/**
+    # routes above. Each service's spec is otherwise unmodified; "Try it
+    # out" targets whatever server URL that service's own springdoc
+    # advertises (its direct address), not this proxied path — see
+    # gateway/README.md's API catalog section.
+    urls:
+      - name: gateway
+        url: /v3/api-docs
+      - name: customer-service
+        url: /api-docs/customer-service/v3/api-docs
+      - name: kyc-service
+        url: /api-docs/kyc-service/v3/api-docs
+      - name: aml-service
+        url: /api-docs/aml-service/v3/api-docs
+      - name: document-service
+        url: /api-docs/document-service/v3/api-docs
+      - name: fund-service
+        url: /api-docs/fund-service/v3/api-docs
+      - name: portfolio-service
+        url: /api-docs/portfolio-service/v3/api-docs
+      - name: investment-service
+        url: /api-docs/investment-service/v3/api-docs
+      - name: payment-service
+        url: /api-docs/payment-service/v3/api-docs
+      - name: reporting-service
+        url: /api-docs/reporting-service/v3/api-docs
 
 server:
   port: ${SERVER_PORT:8080}

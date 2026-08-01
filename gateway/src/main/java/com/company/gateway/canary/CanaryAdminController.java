@@ -1,5 +1,7 @@
 package com.company.gateway.canary;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +18,7 @@ import java.util.Map;
  * means {@code POST .../customer-lookup?legacyWeightPercent=0} — no
  * redeploy.
  */
+@Tag(name = "Canary Admin", description = "Runtime control of the Phase 6 demo canary split — administrator role only")
 @RestController
 @RequestMapping("/admin/canary")
 public class CanaryAdminController {
@@ -26,12 +29,14 @@ public class CanaryAdminController {
         this.weightRegistry = weightRegistry;
     }
 
+    @Operation(summary = "Get the current legacy-shadow weight for the customer-lookup canary")
     @GetMapping("/customer-lookup")
     public Map<String, Integer> getWeight() {
         return Map.of("legacyWeightPercent",
                 weightRegistry.getLegacyWeightPercent(CustomerLookupCanaryController.MIGRATION_ID));
     }
 
+    @Operation(summary = "Set the legacy-shadow weight for the customer-lookup canary (0-100, takes effect on the next request, no restart)")
     @PostMapping("/customer-lookup")
     public Map<String, Integer> setWeight(@RequestParam int legacyWeightPercent) {
         weightRegistry.setLegacyWeightPercent(CustomerLookupCanaryController.MIGRATION_ID, legacyWeightPercent);
