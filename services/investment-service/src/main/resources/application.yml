@@ -47,6 +47,10 @@ server:
   port: ${SERVER_PORT:8089}
 
 management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
   endpoints:
     web:
       exposure:
