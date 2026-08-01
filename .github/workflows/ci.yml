@@ -390,7 +390,7 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Build Docker images for all nine services
+      - name: Build Docker images for all ten services
         run: |
           docker build --build-arg MODULE=gateway --build-arg JAR_NAME=gateway-1.0.0-SNAPSHOT.jar -t gateway:ci .
           docker build --build-arg MODULE=services/customer-service --build-arg JAR_NAME=customer-service-1.0.0-SNAPSHOT.jar -t customer-service:ci .
@@ -400,6 +400,7 @@ jobs:
           docker build --build-arg MODULE=services/fund-service --build-arg JAR_NAME=fund-service-1.0.0-SNAPSHOT.jar -t fund-service:ci .
           docker build --build-arg MODULE=services/portfolio-service --build-arg JAR_NAME=portfolio-service-1.0.0-SNAPSHOT.jar -t portfolio-service:ci .
           docker build --build-arg MODULE=services/investment-service --build-arg JAR_NAME=investment-service-1.0.0-SNAPSHOT.jar -t investment-service:ci .
+          docker build --build-arg MODULE=services/payment-service --build-arg JAR_NAME=payment-service-1.0.0-SNAPSHOT.jar -t payment-service:ci .
           docker build --build-arg MODULE=platform/audit-service --build-arg JAR_NAME=audit-service-1.0.0-SNAPSHOT.jar -t audit-service:ci .
 
       - name: Install Helm
@@ -407,7 +408,7 @@ jobs:
 
       - name: Lint the chart for every service and environment
         run: |
-          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service audit-service; do
+          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service payment-service audit-service; do
             for env in dev test staging prod; do
               helm lint deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \
@@ -424,7 +425,7 @@ jobs:
       - name: Validate rendered manifests and namespace/NetworkPolicy YAML against real K8s schemas
         run: |
           set -e
-          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service audit-service; do
+          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service payment-service audit-service; do
             for env in dev test staging prod; do
               helm template $svc deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \
@@ -559,6 +560,9 @@ jobs:
           - service: investment-service
             module: services/investment-service
             jar: investment-service-1.0.0-SNAPSHOT.jar
+          - service: payment-service
+            module: services/payment-service
+            jar: payment-service-1.0.0-SNAPSHOT.jar
           - service: audit-service
             module: platform/audit-service
             jar: audit-service-1.0.0-SNAPSHOT.jar

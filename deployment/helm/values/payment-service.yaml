@@ -1,0 +1,27 @@
+# Service-specific values for Payment Service. See gateway.yaml for the
+# full install command pattern. Same secrets caveat as customer-service.yaml
+# applies to both the DB and RabbitMQ credentials here.
+
+nameOverride: payment-service
+
+image:
+  repository: payment-service
+
+service:
+  port: 8090
+  targetPort: 8090
+
+env:
+  DB_HOST: payment-service-postgres
+  DB_PORT: "5432"
+  DB_NAME: payment_service
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+
+envFrom:
+  - secretRef:
+      name: payment-service-db
+      optional: true
+  - secretRef:
+      name: payment-service-rabbitmq
+      optional: true
