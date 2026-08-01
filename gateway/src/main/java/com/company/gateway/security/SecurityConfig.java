@@ -45,6 +45,11 @@ public class SecurityConfig {
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers("/actuator/health/**", "/actuator/info", "/actuator/gateway/**", "/actuator/prometheus")
                         .permitAll()
+                        // Runtime canary-weight control (guide §25 Phase 6) — an
+                        // operational lever, not a business-service endpoint, so
+                        // gated to administrator here rather than left to each
+                        // downstream service's own @PreAuthorize.
+                        .pathMatchers("/admin/canary/**").hasRole("ADMINISTRATOR")
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(reactiveJwtAuthenticationConverter())))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
