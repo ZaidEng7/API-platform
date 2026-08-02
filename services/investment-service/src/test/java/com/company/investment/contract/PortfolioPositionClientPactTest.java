@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class PortfolioPositionClientPactTest {
 
     private static final UUID PORTFOLIO_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
+    private static final UUID SUBSCRIPTION_ID = UUID.fromString("77777777-7777-7777-7777-777777777777");
 
     @Pact(consumer = "investment-service", provider = "portfolio-service")
     RequestResponsePact recordPosition(PactDslWithProvider builder) {
@@ -40,8 +41,8 @@ class PortfolioPositionClientPactTest {
                 .method("POST")
                 .headers(Map.of("Content-Type", "application/json"))
                 .body("""
-                        {"fundCode": "EQFND01", "quantity": 100}
-                        """)
+                        {"fundCode": "EQFND01", "quantity": 100, "sourceReference": "%s"}
+                        """.formatted(SUBSCRIPTION_ID))
                 .willRespondWith()
                 .status(201)
                 .headers(Map.of("Content-Type", "application/json"))
@@ -65,7 +66,7 @@ class PortfolioPositionClientPactTest {
     void clientDoesNotThrowOnSuccess(MockServer mockServer) {
         var client = new PortfolioPositionClient(RestClient.builder().baseUrl(mockServer.getUrl()).build());
 
-        assertThatCode(() -> client.recordPosition(PORTFOLIO_ID, "EQFND01", new BigDecimal("100")))
+        assertThatCode(() -> client.recordPosition(PORTFOLIO_ID, "EQFND01", new BigDecimal("100"), SUBSCRIPTION_ID))
                 .doesNotThrowAnyException();
     }
 }

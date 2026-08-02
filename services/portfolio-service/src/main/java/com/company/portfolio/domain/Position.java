@@ -34,15 +34,27 @@ public class Position {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    /**
+     * Opaque reference to whatever caused this position to be recorded
+     * (Investment Service passes its {@code Subscription} id) — lets
+     * {@link com.company.portfolio.application.PortfolioApplicationService#recordPosition}
+     * detect a retried call and return the original position instead of
+     * creating a duplicate. Nullable: not every caller necessarily has one.
+     */
+    @Column(updatable = false)
+    private String sourceReference;
+
     protected Position() {
     }
 
-    public Position(UUID id, UUID portfolioId, String fundCode, BigDecimal quantity, Instant createdAt) {
+    public Position(UUID id, UUID portfolioId, String fundCode, BigDecimal quantity, Instant createdAt,
+                     String sourceReference) {
         this.id = id;
         this.portfolioId = portfolioId;
         this.fundCode = fundCode;
         this.quantity = quantity;
         this.createdAt = createdAt;
+        this.sourceReference = sourceReference;
     }
 
     public UUID getId() {

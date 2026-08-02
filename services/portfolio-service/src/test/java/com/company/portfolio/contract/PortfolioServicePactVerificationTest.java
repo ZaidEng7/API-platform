@@ -8,6 +8,7 @@ import au.com.dius.pact.provider.spring.spring7.PactVerificationSpring7Provider;
 import au.com.dius.pact.provider.spring.spring7.Spring7MockMvcTestTarget;
 import com.company.portfolio.application.PortfolioApplicationService;
 import com.company.portfolio.domain.Position;
+import com.company.portfolio.infrastructure.PositionInsertGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -23,6 +24,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
@@ -56,6 +59,14 @@ class PortfolioServicePactVerificationTest {
     @MockitoBean
     private PortfolioApplicationService portfolioApplicationService;
 
+    // PositionInsertGuard needs PositionJpaRepository, which doesn't exist
+    // in this JPA-excluded context (see the @SpringBootTest properties
+    // above) — mocked here purely so Spring can satisfy the bean graph; it's
+    // never actually invoked since portfolioApplicationService itself
+    // (the only thing that calls it) is fully mocked above.
+    @MockitoBean
+    private PositionInsertGuard positionInsertGuard;
+
     @BeforeEach
     void setUpTestTarget(PactVerificationContext context) {
         context.setTarget(new Spring7MockMvcTestTarget(mockMvc));
@@ -63,9 +74,9 @@ class PortfolioServicePactVerificationTest {
 
     @State("portfolio 55555555-5555-5555-5555-555555555555 exists")
     void portfolioExists() {
-        when(portfolioApplicationService.recordPosition(PORTFOLIO_ID, "EQFND01", new BigDecimal("100")))
+        when(portfolioApplicationService.recordPosition(eq(PORTFOLIO_ID), eq("EQFND01"), eq(new BigDecimal("100")), any()))
                 .thenReturn(new Position(POSITION_ID, PORTFOLIO_ID, "EQFND01", new BigDecimal("100"),
-                        Instant.parse("2026-08-01T00:00:00Z")));
+                        Instant.parse("2026-08-01T00:00:00Z"), null));
     }
 
     @TestTemplate

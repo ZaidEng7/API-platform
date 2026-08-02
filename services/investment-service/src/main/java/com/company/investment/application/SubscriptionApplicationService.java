@@ -6,6 +6,7 @@ import com.company.investment.domain.event.SubscriptionCancelled;
 import com.company.investment.domain.event.SubscriptionConfirmed;
 import com.company.investment.domain.event.SubscriptionFailed;
 import com.company.investment.domain.event.SubscriptionReserved;
+import com.company.investment.infrastructure.SubscriptionInsertGuard;
 import com.company.investment.infrastructure.SubscriptionJpaRepository;
 import com.company.investment.infrastructure.client.AmlScreeningClient;
 import com.company.investment.infrastructure.client.CustomerServiceClient;
@@ -18,6 +19,8 @@ import com.company.platform.web.correlation.CorrelationIdFilter;
 import com.company.platform.web.exception.ApiException;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -53,6 +56,7 @@ public class SubscriptionApplicationService {
     private static final String PRODUCER = "investment-service";
 
     private final SubscriptionJpaRepository subscriptionRepository;
+    private final SubscriptionInsertGuard subscriptionInsertGuard;
     private final CustomerServiceClient customerServiceClient;
     private final KycCheckClient kycCheckClient;
     private final AmlScreeningClient amlScreeningClient;
@@ -61,12 +65,14 @@ public class SubscriptionApplicationService {
     private final Duration timeout;
 
     public SubscriptionApplicationService(SubscriptionJpaRepository subscriptionRepository,
+                                           SubscriptionInsertGuard subscriptionInsertGuard,
                                            CustomerServiceClient customerServiceClient, KycCheckClient kycCheckClient,
                                            AmlScreeningClient amlScreeningClient,
                                            PortfolioPositionClient portfolioPositionClient,
                                            OutboxEventStore outboxEventStore,
                                            @Value("${investment.subscription.timeout}") Duration timeout) {
         this.subscriptionRepository = subscriptionRepository;
+        this.subscriptionInsertGuard = subscriptionInsertGuard;
         this.customerServiceClient = customerServiceClient;
         this.kycCheckClient = kycCheckClient;
         this.amlScreeningClient = amlScreeningClient;
@@ -96,13 +102,19 @@ public class SubscriptionApplicationService {
      * Idempotent on {@code idempotencyKey} (guide §12.3: financial-effect
      * POSTs require a client-generated {@code Idempotency-Key}) — a replayed
      * request with the same key returns the original subscription rather
-     * than creating a duplicate. Runs "validate customer → KYC/AML check →
-     * reserve" synchronously: all three downstream services are our own
-     * fast REST APIs, not a legacy batch process, so there's no need to
-     * persist intermediate saga state between these particular steps —
-     * only the genuinely long-running "await payment" step needs that
-     * (see {@link #confirmPayment}, {@link #cancel}, and the scheduled
-     * timeout job).
+     * than creating a duplicate, including under genuine concurrency: two
+     * requests carrying the same key that both pass the initial check
+     * before either commits (a real client-retry-after-slow-response
+     * scenario) are resolved by {@link SubscriptionInsertGuard}, not by a
+     * naive check-then-act that would let the second one crash on the
+     * unique-constraint violation instead of returning the first one's
+     * result. Runs "validate customer → KYC/AML check → reserve"
+     * synchronously: all three downstream services are our own fast REST
+     * APIs, not a legacy batch process, so there's no need to persist
+     * intermediate saga state between these particular steps — only the
+     * genuinely long-running "await payment" step needs that (see
+     * {@link #confirmPayment}, {@link #cancel}, and the scheduled timeout
+     * job).
      */
     @Transactional
     public Subscription requestSubscription(String idempotencyKey, UUID customerId, UUID ownerId, UUID portfolioId,
@@ -119,22 +131,37 @@ public class SubscriptionApplicationService {
         boolean kycApproved = kycCheckClient.isApproved(customerId);
         boolean amlClear = amlScreeningClient.isClear(customerId);
 
+        Subscription candidate;
+        String eventType;
+        Object eventPayload;
         if (!kycApproved || !amlClear) {
             String reason = !kycApproved && !amlClear ? "KYC not approved and AML screening not clear"
                     : !kycApproved ? "KYC not approved" : "AML screening not clear";
-            Subscription subscription = subscriptionRepository.save(
-                    Subscription.failed(id, idempotencyKey, customerId, ownerId, portfolioId, fundCode, quantity,
-                            reason, now));
-            publish(FAILED_EVENT_TYPE, id.toString(), new SubscriptionFailed(id, customerId, reason, now), now);
-            return subscription;
+            candidate = Subscription.failed(id, idempotencyKey, customerId, ownerId, portfolioId, fundCode, quantity,
+                    reason, now);
+            eventType = FAILED_EVENT_TYPE;
+            eventPayload = new SubscriptionFailed(id, customerId, reason, now);
+        } else {
+            candidate = Subscription.reserved(id, idempotencyKey, customerId, ownerId, portfolioId, fundCode,
+                    quantity, now, now.plus(timeout));
+            eventType = RESERVED_EVENT_TYPE;
+            eventPayload = new SubscriptionReserved(id, customerId, portfolioId, fundCode, quantity, now);
         }
 
-        Subscription subscription = subscriptionRepository.save(
-                Subscription.reserved(id, idempotencyKey, customerId, ownerId, portfolioId, fundCode, quantity, now,
-                        now.plus(timeout)));
-        publish(RESERVED_EVENT_TYPE, id.toString(), new SubscriptionReserved(id, customerId, portfolioId, fundCode,
-                quantity, now), now);
-        return subscription;
+        try {
+            Subscription inserted = subscriptionInsertGuard.insert(candidate);
+            publish(eventType, id.toString(), eventPayload, now);
+            return inserted;
+        } catch (DataIntegrityViolationException e) {
+            // Lost a genuine concurrent race: another request with the same
+            // idempotencyKey committed between our check above and our insert
+            // attempt. That request already published its own event — return
+            // its result rather than publishing a duplicate.
+            return subscriptionRepository.findByIdempotencyKey(idempotencyKey)
+                    .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "INV-4092",
+                            "Subscription insert conflicted on idempotencyKey " + idempotencyKey
+                                    + " but no existing subscription was found"));
+        }
     }
 
     /**
@@ -142,6 +169,22 @@ public class SubscriptionApplicationService {
      * call succeeds — checked before calling out, not after, so a failed
      * or already-confirmed subscription never triggers a duplicate
      * position (guide §12.3: saga steps must be idempotent).
+     *
+     * <p>The status transition is claimed (mutated + flushed, so a stale
+     * {@link com.company.investment.domain.Subscription}'s optimistic-lock
+     * {@code version} conflict surfaces here) <em>before</em> calling
+     * Portfolio Service, not after. {@link SubscriptionTimeoutJob} can race
+     * this same row from an independent transaction; without claiming
+     * first, a lost race would only be discovered after the position was
+     * already recorded — this way, a lost race means the external call is
+     * never made at all, and this method's own rollback-on-failure
+     * behavior (nothing commits until the method returns normally) means a
+     * confirmPayment failure after the flush still safely reverts to
+     * AWAITING_PAYMENT.
+     *
+     * @throws ApiException 409 if this subscription isn't AWAITING_PAYMENT,
+     *                       or was concurrently modified (e.g. timed out)
+     *                       between being read and being claimed here.
      */
     @Transactional
     public Subscription confirmPayment(UUID id) {
@@ -152,9 +195,16 @@ public class SubscriptionApplicationService {
                     "Subscription " + id + " is not awaiting payment (" + subscription.getStatus() + ")");
         }
 
-        portfolioPositionClient.recordPosition(subscription.getPortfolioId(), subscription.getFundCode(),
-                subscription.getQuantity());
         subscription.confirm();
+        try {
+            subscriptionRepository.saveAndFlush(subscription);
+        } catch (OptimisticLockingFailureException e) {
+            throw new ApiException(HttpStatus.CONFLICT, "INV-4092",
+                    "Subscription " + id + " was concurrently modified (e.g. timed out) — refresh and retry");
+        }
+
+        portfolioPositionClient.recordPosition(subscription.getPortfolioId(), subscription.getFundCode(),
+                subscription.getQuantity(), subscription.getId());
 
         var payload = new SubscriptionConfirmed(subscription.getId(), subscription.getCustomerId(),
                 subscription.getPortfolioId(), subscription.getFundCode(), subscription.getQuantity(),
@@ -168,7 +218,10 @@ public class SubscriptionApplicationService {
      * The compensating action for a subscription that never gets paid —
      * see {@link Subscription#cancel()}'s Javadoc.
      *
-     * @throws ApiException 409 if this subscription isn't AWAITING_PAYMENT.
+     * @throws ApiException 409 if this subscription isn't AWAITING_PAYMENT,
+     *                       or was concurrently modified (e.g. already
+     *                       confirmed or timed out) between being read and
+     *                       being claimed here.
      */
     @Transactional
     public Subscription cancel(UUID id) {
@@ -176,8 +229,12 @@ public class SubscriptionApplicationService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "INV-4041", "Subscription not found: " + id));
         try {
             subscription.cancel();
+            subscriptionRepository.saveAndFlush(subscription);
         } catch (IllegalStateException e) {
             throw new ApiException(HttpStatus.CONFLICT, "INV-4091", e.getMessage());
+        } catch (OptimisticLockingFailureException e) {
+            throw new ApiException(HttpStatus.CONFLICT, "INV-4092",
+                    "Subscription " + id + " was concurrently modified (e.g. already confirmed or timed out) — refresh and retry");
         }
 
         publish(CANCELLED_EVENT_TYPE, id.toString(),

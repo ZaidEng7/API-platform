@@ -103,7 +103,8 @@ public class PortfolioController {
     @PreAuthorize(WRITE_ROLES)
     public ResponseEntity<ApiResponse<PositionResponse>> recordPosition(@PathVariable UUID id,
                                                                          @Valid @RequestBody RecordPositionRequest request) {
-        var position = portfolioApplicationService.recordPosition(id, request.fundCode(), request.quantity());
+        var position = portfolioApplicationService.recordPosition(id, request.fundCode(), request.quantity(),
+                request.sourceReference());
         var response = portfolioMapper.toResponse(position);
         return ResponseEntity.created(URI.create("/api/v1/portfolios/" + id + "/positions/" + response.id()))
                 .body(ApiResponse.of(response));

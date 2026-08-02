@@ -6,6 +6,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -69,6 +70,17 @@ public class Subscription {
 
     /** Only meaningful while {@code status == AWAITING_PAYMENT} — when the timeout job should act. */
     private Instant timeoutAt;
+
+    /**
+     * Optimistic lock: {@link com.company.investment.infrastructure.scheduling.SubscriptionTimeoutJob}
+     * and {@code confirmPayment()}/{@code cancel()} can all race on the
+     * same AWAITING_PAYMENT row from independent transactions. Without
+     * this, JPA's default save() silently overwrites whichever transaction
+     * commits last — this makes a lost race throw
+     * {@code OptimisticLockingFailureException} instead.
+     */
+    @Version
+    private long version;
 
     protected Subscription() {
     }
