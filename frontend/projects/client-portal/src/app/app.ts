@@ -21,6 +21,7 @@ export class App implements OnInit {
     { label: 'My Portfolio', path: '/portfolio', icon: 'pie_chart' },
     { label: 'My Subscriptions', path: '/subscriptions', icon: 'receipt_long' },
     { label: 'Compliance Status', path: '/compliance-status', icon: 'verified_user' },
+    { label: 'Party Lookup', path: '/party-lookup', icon: 'person_search' },
   ];
   protected readonly checkingAuth = signal(true);
   protected readonly isAuthenticated = signal(false);

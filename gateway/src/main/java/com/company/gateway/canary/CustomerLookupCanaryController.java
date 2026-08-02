@@ -3,6 +3,7 @@ package com.company.gateway.canary;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,7 +56,7 @@ public class CustomerLookupCanaryController {
     }
 
     @Operation(summary = "Look up a customer by id, weighted-routed to Customer Service or crm-adapter", description = "Response carries X-Canary-Target so callers can see which backend actually answered.")
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> lookup(@PathVariable String id) {
         boolean useLegacy = ThreadLocalRandom.current().nextInt(100) < weightRegistry.getLegacyWeightPercent(MIGRATION_ID);
         String target = useLegacy ? crmAdapterBaseUrl + "/api/v1/crm-customers/" + id

@@ -20,6 +20,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/compliance-status/compliance-status').then((m) => m.ComplianceStatus),
   },
+  {
+    path: 'party-lookup',
+    loadComponent: () => import('./features/party-lookup/party-lookup').then((m) => m.PartyLookup),
+  },
   { path: '', pathMatch: 'full', redirectTo: 'portfolio' },
   { path: '**', redirectTo: 'portfolio' },
 ];
