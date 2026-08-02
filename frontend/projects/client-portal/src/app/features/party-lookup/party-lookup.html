@@ -1,0 +1,75 @@
+<h1 class="page-title">Party / Customer Lookup</h1>
+<p class="page-intro">
+  Look up a customer/party record by id. This is a demonstration of the platform's strangler-fig
+  migration: which system answers — the migrated Customer Service, or the legacy CRM — depends on
+  the current migration rollout weight, not on you.
+</p>
+
+<form class="lookup-form" (submit)="$event.preventDefault(); search(idField.value)">
+  <mat-form-field appearance="outline">
+    <mat-label>Customer ID</mat-label>
+    <input matInput #idField placeholder="e.g. a Customer Service UUID, or a legacy CRM id" />
+  </mat-form-field>
+  <button mat-raised-button color="primary" type="submit" [disabled]="loading()">Look Up</button>
+</form>
+
+@if (loading()) {
+  <lib-loading-spinner message="Looking up customer…" [diameter]="32" />
+} @else if (error()) {
+  <lib-error-state
+    message="Couldn't complete the lookup. Please try again."
+    (retry)="search(idField.value)"
+  />
+} @else if (notFound()) {
+  <p class="empty-state">No customer/party record found for that id.</p>
+} @else if (searched() && result()) {
+  <section class="result">
+    <div class="result-source">
+      <span>Data source:</span>
+      <mat-chip-set>
+        <mat-chip>{{ source() === 'crm-adapter' ? 'Legacy CRM' : 'Customer Service' }}</mat-chip>
+      </mat-chip-set>
+    </div>
+
+    <dl class="result-fields">
+      @if (result()?.['id']) {
+        <dt>ID</dt>
+        <dd>{{ result()?.['id'] }}</dd>
+      }
+      @if (result()?.['fullName']) {
+        <dt>Full name</dt>
+        <dd>{{ result()?.['fullName'] }}</dd>
+      }
+      @if (result()?.['email']) {
+        <dt>Email</dt>
+        <dd>{{ result()?.['email'] }}</dd>
+      }
+
+      @if (result()?.['phone']) {
+        <dt>Phone</dt>
+        <dd>{{ result()?.['phone'] }}</dd>
+      }
+      @if (result()?.['dateOfBirth']) {
+        <dt>Date of birth</dt>
+        <dd>{{ result()?.['dateOfBirth'] }}</dd>
+      }
+      @if (result()?.['partyType']) {
+        <dt>Party type</dt>
+        <dd>{{ result()?.['partyType'] }}</dd>
+      }
+      @if (result()?.['createdAt']) {
+        <dt>Created</dt>
+        <dd>{{ result()?.['createdAt'] }}</dd>
+      }
+
+      @if (result()?.['status']) {
+        <dt>Status</dt>
+        <dd>{{ result()?.['status'] }}</dd>
+      }
+      @if (result()?.['vip'] !== undefined) {
+        <dt>VIP</dt>
+        <dd>{{ result()?.['vip'] ? 'Yes' : 'No' }}</dd>
+      }
+    </dl>
+  </section>
+}

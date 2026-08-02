@@ -90,10 +90,25 @@ response parsing even though the real runtime response is genuinely JSON. This b
 _any_ controller the first time it gets a real generated-client consumer, not just
 newly-written ones — `ReportingController` and Payment Service's `TransferController`
 both still lacked it in Phase C despite predating that phase, since neither had a
-frontend consumer before then. Portfolio, Investment, KYC, AML, Document, Payment, and
-Reporting Service controllers all declare it now; Fund/Customer/Audit/Gateway-canary
-still don't (no frontend consumer yet — fix this the moment one is added, before
-debugging anything else about an empty response).
+frontend consumer before then. Portfolio, Investment, KYC, AML, Document, Payment,
+Reporting, and (as of Phase D) the Gateway's own `CustomerLookupCanaryController` all
+declare it now; Fund/Customer/Audit still don't (no frontend consumer yet — fix this the
+moment one is added, before debugging anything else about an empty response). Note that
+`CustomerLookupCanaryController` returns a raw `ResponseEntity<String>` (it proxies
+whichever backend answered, and the two backends' response shapes genuinely differ) —
+`produces` still fixes the generated client's `Accept`/`responseType` the same way, and
+was confirmed live to pass the body through unmodified rather than double-encoding it.
+
+A real cross-origin browser consumer of a Gateway endpoint (as opposed to a same-origin
+static page) can also hit a CORS gap that a proxied business-service route never would:
+`spring.cloud.gateway.globalcors` only covers requests Spring Cloud Gateway's own route
+locator proxies, not plain `@RestController`s living in the Gateway app itself (like
+`CustomerLookupCanaryController`). If a preflight `OPTIONS` request 401s, the Gateway's
+`SecurityConfig` needs its own `.cors(...)` wiring, not just an origin allow-list in
+YAML. Separately, any custom response header a component reads off `HttpResponse`
+(`X-Canary-Target` here) needs `Access-Control-Expose-Headers` set explicitly — browsers
+hide non-simple response headers from cross-origin JS by default even though the header
+is genuinely present on the wire.
 
 If a locally-running Angular dev server's build gets stuck failing with `NG2008: Could
 not find stylesheet file` after creating a new component's `.ts`/`.scss` pair, it's a

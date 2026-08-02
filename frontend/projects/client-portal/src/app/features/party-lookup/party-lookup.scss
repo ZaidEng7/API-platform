@@ -1,0 +1,49 @@
+.page-title {
+  margin: 0 0 0.5rem;
+}
+
+.page-intro {
+  color: var(--mat-sys-on-surface-variant);
+  max-width: 40rem;
+  margin: 0 0 1.5rem;
+}
+
+.lookup-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  mat-form-field {
+    width: 24rem;
+  }
+}
+
+.empty-state {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.result {
+  margin-top: 1rem;
+}
+
+.result-source {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.result-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.5rem;
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+  }
+}

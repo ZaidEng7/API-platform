@@ -23,6 +23,8 @@ This is deliberately a plain proxying `@RestController`, not a declarative Sprin
 
 Open `/canary-demo.html` (served as a static resource by this module) for an interactive view — call the endpoint repeatedly and watch the target tally, or change the weight and see the split shift on the next call with no restart.
 
+**Real cross-origin consumer (Frontend Phase D)**: Client Portal's Party Lookup feature calls this endpoint over a real cross-origin browser request (`http://localhost:4200` → `http://localhost:8080`), unlike `canary-demo.html` which is same-origin. This surfaced two gaps `canary-demo.html` never could: (1) `CustomerLookupCanaryController` had no `produces` declared, so its generated TypeScript client defaulted to blob-parsing the response (the same recurring gotcha other services have hit — see `docs/roadmap.md` Phase B/C/D notes); (2) `spring.cloud.gateway.globalcors` only covers requests proxied through Spring Cloud Gateway's own route locator, never plain `@RestController`s like this one — `SecurityConfig.java` now wires its own `CorsConfigurationSource` (same allowed-origins property) via `.cors(...)`, with `X-Canary-Target` explicitly listed in `Access-Control-Expose-Headers` (browsers hide custom response headers from cross-origin JS callers by default, even though the header is present on the wire either way).
+
 ## API catalog
 
 Guide §7.28/Phase 7's "start with the OpenAPI specs + Swagger UI aggregation" step: every business service already exposes its own `/v3/api-docs` and `swagger-ui.html` (springdoc, annotated per-controller since the Phase 5 exit criteria work), but each was only reachable standalone, service by service. This module now aggregates all nine into one page:
