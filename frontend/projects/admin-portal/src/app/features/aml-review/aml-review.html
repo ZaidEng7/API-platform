@@ -1,0 +1,98 @@
+<h1 class="page-title">AML Review Queue</h1>
+
+@if (store.loading()) {
+  <lib-loading-spinner message="Loading AML screenings…" />
+} @else if (store.loadError()) {
+  <lib-error-state
+    message="Couldn't load the AML review queue. Please try again."
+    (retry)="reload()"
+  />
+} @else if (store.isEmpty()) {
+  <p class="empty-state">No AML screenings found.</p>
+} @else {
+  <table class="queue-table">
+    <thead>
+      <tr>
+        <th>Customer ID</th>
+        <th>Status</th>
+        <th>Outcome</th>
+        <th>Requested</th>
+        <th>Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (screening of store.items(); track screening.screeningId) {
+        <tr>
+          <td>{{ screening.customerId }}</td>
+          <td>
+            <mat-chip-set>
+              <mat-chip [class]="statusClass(screening.status)">{{ screening.status }}</mat-chip>
+            </mat-chip-set>
+          </td>
+          <td>{{ screening.outcome ?? '—' }}</td>
+          <td>{{ screening.requestedAt | date: 'medium' }}</td>
+          <td>
+            @if (screening.status === 'IN_PROGRESS') {
+              @if (canRecordResult()) {
+                <div class="decision-form">
+                  <input
+                    type="text"
+                    class="reason-input"
+                    placeholder="Notes (required)"
+                    [(ngModel)]="notes[screening.screeningId!]"
+                  />
+                  <button
+                    mat-stroked-button
+                    color="primary"
+                    [disabled]="
+                      !notes[screening.screeningId!]?.trim() ||
+                      busyIds().has(screening.screeningId!)
+                    "
+                    (click)="recordResult(screening.screeningId!, 'CLEAR')"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    [disabled]="
+                      !notes[screening.screeningId!]?.trim() ||
+                      busyIds().has(screening.screeningId!)
+                    "
+                    (click)="recordResult(screening.screeningId!, 'HIT')"
+                  >
+                    Flag as Hit
+                  </button>
+                </div>
+              }
+              @if (canRecordFailure()) {
+                <div class="decision-form">
+                  <input
+                    type="text"
+                    class="reason-input"
+                    placeholder="Failure reason (required)"
+                    [(ngModel)]="failureReasons[screening.screeningId!]"
+                  />
+                  <button
+                    mat-stroked-button
+                    [disabled]="
+                      !failureReasons[screening.screeningId!]?.trim() ||
+                      busyIds().has(screening.screeningId!)
+                    "
+                    (click)="recordFailure(screening.screeningId!)"
+                  >
+                    Mark Failed
+                  </button>
+                </div>
+              }
+            } @else if (screening.status === 'FAILED') {
+              <span class="decided-reason">{{ screening.failureReason }}</span>
+            } @else {
+              <span class="decided-reason">{{ screening.notes }}</span>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

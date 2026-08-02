@@ -27,4 +27,16 @@ describe('CurrentUserService', () => {
 
     expect(service.subjectId()).toBeNull();
   });
+
+  it('exposes realm roles from the realm_access claim', () => {
+    const service = setup({ realm_access: { roles: ['compliance', 'operations'] } });
+
+    expect(service.roles()).toEqual(['compliance', 'operations']);
+  });
+
+  it('exposes an empty roles array when the payload has no realm_access claim', () => {
+    const service = setup({});
+
+    expect(service.roles()).toEqual([]);
+  });
 });

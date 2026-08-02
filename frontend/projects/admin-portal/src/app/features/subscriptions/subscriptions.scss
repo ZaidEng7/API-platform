@@ -1,0 +1,44 @@
+.queue-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+}
+
+.status--pending {
+  background-color: #fff3cd;
+}
+
+.status--confirmed {
+  background-color: #d4edda;
+}
+
+.status--failed {
+  background-color: #f8d7da;
+}
+
+.status--cancelled {
+  background-color: #e2e3e5;
+}
+
+.decision-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.failure-reason {
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+
+.empty-state {
+  color: rgba(0, 0, 0, 0.6);
+}

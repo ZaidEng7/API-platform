@@ -1,0 +1,62 @@
+<h1 class="page-title">Subscriptions</h1>
+
+@if (store.loading()) {
+  <lib-loading-spinner message="Loading subscriptions…" />
+} @else if (store.loadError()) {
+  <lib-error-state message="Couldn't load subscriptions. Please try again." (retry)="reload()" />
+} @else if (store.isEmpty()) {
+  <p class="empty-state">No subscriptions found.</p>
+} @else {
+  <table class="queue-table">
+    <thead>
+      <tr>
+        <th>Customer ID</th>
+        <th>Fund</th>
+        <th>Quantity</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (subscription of store.items(); track subscription.subscriptionId) {
+        <tr>
+          <td>{{ subscription.customerId }}</td>
+          <td>{{ subscription.fundCode }}</td>
+          <td>{{ subscription.quantity }}</td>
+          <td>
+            <mat-chip-set>
+              <mat-chip [class]="statusClass(subscription.status)">{{
+                subscription.status
+              }}</mat-chip>
+            </mat-chip-set>
+            @if (subscription.status === 'FAILED' && subscription.failureReason) {
+              <p class="failure-reason">{{ subscription.failureReason }}</p>
+            }
+          </td>
+          <td>
+            @if (subscription.status === 'AWAITING_PAYMENT' && canManage()) {
+              <div class="decision-form">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  [disabled]="busyIds().has(subscription.subscriptionId!)"
+                  (click)="confirmPayment(subscription.subscriptionId!)"
+                >
+                  Confirm Payment
+                </button>
+                <button
+                  mat-stroked-button
+                  color="warn"
+                  [disabled]="busyIds().has(subscription.subscriptionId!)"
+                  (click)="cancel(subscription.subscriptionId!)"
+                >
+                  Cancel
+                </button>
+              </div>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

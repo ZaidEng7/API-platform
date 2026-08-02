@@ -21,5 +21,8 @@ export * as PortfolioApiClient from './lib/generated-api/portfolio-service';
 export * as InvestmentApiClient from './lib/generated-api/investment-service';
 export * as KycApiClient from './lib/generated-api/kyc-service';
 export * as AmlApiClient from './lib/generated-api/aml-service';
+export * as DocumentApiClient from './lib/generated-api/document-service';
+export * as PaymentApiClient from './lib/generated-api/payment-service';
+export * as ReportingApiClient from './lib/generated-api/reporting-service';
 
 export * from './lib/current-user/current-user.service';

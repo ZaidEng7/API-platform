@@ -33,6 +33,20 @@
       }
     },
     {
+      "clientId": "admin-portal",
+      "name": "Admin Portal (staff-facing, public client)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:4201/*"],
+      "webOrigins": ["http://localhost:4201"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
       "clientId": "api-platform-services",
       "name": "Service-to-service (confidential client)",
       "protocol": "openid-connect",
@@ -59,6 +73,46 @@
         { "type": "password", "value": "test-password", "temporary": false }
       ],
       "realmRoles": ["investor"]
+    },
+    {
+      "username": "operations.test",
+      "email": "operations.test@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "test-password", "temporary": false }
+      ],
+      "realmRoles": ["operations"]
+    },
+    {
+      "username": "compliance.test",
+      "email": "compliance.test@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "test-password", "temporary": false }
+      ],
+      "realmRoles": ["compliance"]
+    },
+    {
+      "username": "portfolio-manager.test",
+      "email": "portfolio-manager.test@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "test-password", "temporary": false }
+      ],
+      "realmRoles": ["portfolio-manager"]
+    },
+    {
+      "username": "auditor.test",
+      "email": "auditor.test@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "test-password", "temporary": false }
+      ],
+      "realmRoles": ["auditor"]
     }
   ]
 }

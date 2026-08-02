@@ -122,6 +122,131 @@ class DomainEventReportingIntegrationTest extends AbstractMessagingIntegrationTe
     }
 
     @Test
+    @WithMockUser(roles = "COMPLIANCE")
+    void kycRequestedThenApprovedMaterializesAsApprovedInTheKycReport() throws Exception {
+        UUID checkId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.kyc.requested", Map.of(
+                "checkId", checkId,
+                "customerId", customerId,
+                "requestedAt", Instant.now()));
+        publish("customer.kyc.approved", Map.of(
+                "checkId", checkId,
+                "customerId", customerId,
+                "status", "APPROVED",
+                "reason", "",
+                "decidedBy", "compliance-officer-1",
+                "decidedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/kyc-checks").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("APPROVED")));
+    }
+
+    @Test
+    @WithMockUser(roles = "COMPLIANCE")
+    void amlRequestedThenFlaggedMaterializesAsCompletedWithAHitOutcome() throws Exception {
+        UUID screeningId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.aml.requested", Map.of(
+                "screeningId", screeningId,
+                "customerId", customerId,
+                "requestedAt", Instant.now()));
+        publish("customer.aml.flagged", Map.of(
+                "screeningId", screeningId,
+                "customerId", customerId,
+                "outcome", "HIT",
+                "notes", "Sanctions list match",
+                "completedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/aml-screenings").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("COMPLETED"))
+                        .andExpect(jsonPath("$.data[0].outcome").value("HIT")));
+    }
+
+    @Test
+    @WithMockUser(roles = "OPERATIONS")
+    void documentUploadedThenRejectedMaterializesAsRejectedInTheDocumentReport() throws Exception {
+        UUID documentId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.document.uploaded", Map.of(
+                "documentId", documentId,
+                "customerId", customerId,
+                "documentType", "PASSPORT",
+                "uploadedAt", Instant.now()));
+        publish("customer.document.rejected", Map.of(
+                "documentId", documentId,
+                "customerId", customerId,
+                "status", "REJECTED",
+                "notes", "Illegible scan",
+                "reviewedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/documents").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("REJECTED"))
+                        .andExpect(jsonPath("$.data[0].notes").value("Illegible scan")));
+    }
+
+    @Test
+    @WithMockUser(roles = "PORTFOLIO_MANAGER")
+    void subscriptionReservedThenConfirmedMaterializesAsConfirmed() throws Exception {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID portfolioId = UUID.randomUUID();
+
+        publish("investment.subscription.reserved", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "portfolioId", portfolioId,
+                "fundCode", "EQFND01",
+                "quantity", new BigDecimal("50.0000"),
+                "reservedAt", Instant.now()));
+        publish("investment.subscription.confirmed", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "portfolioId", portfolioId,
+                "fundCode", "EQFND01",
+                "quantity", new BigDecimal("50.0000"),
+                "confirmedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/subscriptions").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("CONFIRMED")));
+    }
+
+    @Test
+    @WithMockUser(roles = "PORTFOLIO_MANAGER")
+    void subscriptionFailedWithoutAPriorReservationMaterializesAsFailed() throws Exception {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("investment.subscription.failed", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "failureReason", "KYC check rejected",
+                "failedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/subscriptions").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("FAILED"))
+                        .andExpect(jsonPath("$.data[0].failureReason").value("KYC check rejected")));
+    }
+
+    @Test
     void reportsRequireAStaffRole() throws Exception {
         mockMvc.perform(get("/api/v1/reports/funds")).andExpect(status().isForbidden());
     }

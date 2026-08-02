@@ -1,0 +1,45 @@
+.queue-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+}
+
+.status--uploaded {
+  background-color: #fff3cd;
+}
+
+.status--verified {
+  background-color: #d4edda;
+}
+
+.status--rejected {
+  background-color: #f8d7da;
+}
+
+.decision-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.reason-input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 4px;
+  min-width: 12rem;
+}
+
+.decided-reason {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.empty-state {
+  color: rgba(0, 0, 0, 0.6);
+}
