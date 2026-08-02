@@ -114,6 +114,23 @@ Build order is dependency-driven — do not reorder without an ADR:
 - [x] **Developer portal (Backstage or vendor) + self-service partner onboarding** — [ADR 0007](adr/0007-developer-portal-partner-onboarding-decision.md): the Swagger UI aggregation above is the interim developer-facing catalog; full Backstage and partner self-service onboarding both deferred until a real partner ecosystem exists (there is none today) — when one does, the ADR recommends reusing ADR 0001's OAuth2 Client Credentials pattern rather than a separate API-key system.
 - [x] **API analytics** — new **API Analytics** Grafana dashboard (`deployment/docker/grafana/provisioning/dashboards/json/api-analytics.json`): top 10 endpoints by request rate, top 10 by error rate, and request/error rate by service, built entirely on metrics every service already exports. **"AI-assisted docs/anomaly detection" is explicitly deferred, not built** — no ML/anomaly-detection infrastructure exists anywhere in this platform yet.
 
+## Frontend (guide §5.2) — Client Portal + Admin Portal
+
+Not one of the guide's seven numbered phases — §5.2 specifies the frontend stack, and Phase 6/the SoR matrix name the consumer surfaces (Web/Client Portal, Admin Portal, Mobile, Partners), but building it is its own cross-cutting workstream. Tracked here since it's the real forcing function for actual Phase 6 execution (the Gateway's canary mechanism has had nothing real to migrate traffic *for* since it was built).
+
+**Stack (guide §5.2, not discretionary):** Angular (latest LTS) + Angular Material, RxJS, NgRx only where state complexity justifies it, TypeScript strict mode, one shared Angular workspace library (auth interceptor, correlation-ID interceptor, error handling, `openapi-generator`-generated API clients from the Gateway's existing aggregated OpenAPI catalog).
+
+**Already in place, unused until now:** Gateway's CORS allow-list already defaults to `http://localhost:4200` (Angular's default dev port); Keycloak's `gateway-portal` public client (Auth Code + PKCE) has existed since Phase 3.
+
+- [ ] 🧑‍💼 **Open decisions before Phase A starts**: which app to build first (Client Portal vs. Admin Portal); state-management approach (NgRx per the guide vs. Angular's newer Signals-based state APIs, which postdate the guide); auth library (`angular-oauth2-oidc` vs. `angular-auth-oidc-client`); design/branding direction (none exists yet beyond "Angular Material"); confirm Mobile stays out of scope for now.
+- [ ] **Phase A — Workspace + shared library**: scaffold the Angular workspace (`frontend/`, `projects/shared` + one project per app), TypeScript strict mode, Angular Material theme, Auth Code+PKCE against `gateway-portal`, auth + correlation-ID interceptors, `openapi-generator`-generated typed clients from the Gateway's `/v3/api-docs` aggregation, shared RFC 7807 error handling.
+- [ ] **Phase B — Client Portal** (investor-facing, read-heavy first): login, "my portfolio" (Portfolio Service), "my subscriptions" (Investment Service), KYC/AML status (read-only). Investor-initiated writes (e.g. self-service subscription) need backend changes first — Portfolio/Investment Service are staff-only writes today, a known documented limitation in both services' READMEs.
+- [ ] **Phase C — Admin Portal** (staff-facing, NgRx justified here per the guide's own example): KYC/AML review queues, document review, subscription confirm/cancel, payment settle/fail — every action already exposed by the 9 services' APIs, just needs a UI.
+- [ ] **Phase D — Real Phase 6 execution**: point Client Portal's Customer/Party lookup at the Gateway's existing `/api/v1/customer-lookup/{id}` canary endpoint — the first real consumer of the weighted-canary mechanism built as a demo in the Phase 6 starter. Migrate other legacy-adapter-backed reads the same way as they come up.
+- [ ] Testing: unit (Jasmine/Karma or Jest, TBD), E2E (Playwright or Cypress against a running Gateway)
+- [ ] CI/CD: new GitHub Actions job(s) alongside the existing Java matrix (lint, unit test, build, Trivy-scan); deployment via the same `service-chart` Helm pattern every Java service already uses, serving the static build through Nginx
+- [ ] **Not planned**: Mobile — guide names it as a separate consumer surface with no framework mandate; worth its own decision once the web apps exist and a real requirement shows up, not built speculatively now.
+
 ---
 
 ## Immediate next actions (from guide's own "Immediate next steps")
