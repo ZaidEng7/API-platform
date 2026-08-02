@@ -1,0 +1,23 @@
+.page-title {
+  margin: 0 0 1.5rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.empty-state {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.5rem 1rem 0.5rem 0;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+}

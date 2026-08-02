@@ -36,8 +36,8 @@ import java.util.UUID;
  * verify ownership — this is the #1 API vulnerability class (BOLA/IDOR)."
  * {@link com.company.platform.security.CurrentUser}'s own Javadoc already
  * documented this exact rule as the reason it exists; this is the first
- * service to actually use it for that purpose (KYC/AML use it only to
- * attribute a decision, not to gate access).
+ * service to actually use it for that purpose (KYC/AML Service and
+ * Investment Service later adopted the same pattern for their own reads).
  */
 @Service
 public class PortfolioApplicationService {

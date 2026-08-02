@@ -9,6 +9,7 @@ import com.company.platform.messaging.envelope.EventEnvelope;
 import com.company.platform.messaging.outbox.OutboxEventStore;
 import com.company.platform.security.CurrentUser;
 import com.company.platform.web.correlation.CorrelationIdFilter;
+import com.company.platform.security.CurrentUser;
 import com.company.platform.web.exception.ApiException;
 import org.slf4j.MDC;
 import org.springframework.data.domain.Page;
@@ -18,10 +19,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
+/**
+ * Enforces the same BOLA/IDOR ownership rule as Portfolio/Investment
+ * Service (guide §12.2): an 'investor' caller may only read their own KYC
+ * checks (customerId compared to the JWT {@code sub} claim); staff roles
+ * see any customer's.
+ */
 @Service
 public class KycCheckApplicationService {
+
+    private static final List<String> STAFF_ROLES = List.of("OPERATIONS", "COMPLIANCE", "CUSTOMER_SERVICE", "AUDITOR");
 
     private static final String REQUESTED_EVENT_TYPE = "customer.kyc.requested";
     private static final String PRODUCER = "kyc-service";
@@ -36,12 +46,18 @@ public class KycCheckApplicationService {
 
     @Transactional(readOnly = true)
     public KycCheck getById(UUID id) {
-        return kycCheckRepository.findById(id)
+        KycCheck check = kycCheckRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "KYC-4041", "KYC check not found: " + id));
+        enforceOwnership(check);
+        return check;
     }
 
+    /** @throws ApiException 403 if an investor-only caller queries another customer's checks. */
     @Transactional(readOnly = true)
     public Page<KycCheck> listByCustomer(UUID customerId, Pageable pageable) {
+        if (!isStaff() && !customerId.toString().equals(CurrentUser.subject().orElse(null))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "KYC-4030", "You do not have access to that customer's KYC checks");
+        }
         return kycCheckRepository.findByCustomerId(customerId, pageable);
     }
 
@@ -97,5 +113,19 @@ public class KycCheckApplicationService {
         var envelope = new EventEnvelope<>(UUID.randomUUID(), eventType, occurredAt, correlationId, PRODUCER, 1,
                 payload);
         outboxEventStore.write("KycCheck", aggregateId.toString(), eventType, envelope, correlationId, PRODUCER);
+    }
+
+    private void enforceOwnership(KycCheck check) {
+        if (isStaff()) {
+            return;
+        }
+        String callerId = CurrentUser.subject().orElse(null);
+        if (!check.getCustomerId().toString().equals(callerId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "KYC-4030", "You do not have access to this KYC check");
+        }
+    }
+
+    private boolean isStaff() {
+        return STAFF_ROLES.stream().anyMatch(CurrentUser::hasRole);
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -31,12 +32,20 @@ import java.util.UUID;
  * Role gates follow the realm's own role descriptions
  * (platform/identity/realm-export.json), same rationale as KYC Service's
  * controller: "compliance" owns the sign-off (here: the CLEAR/HIT result),
- * "operations" owns marking a screening technically FAILED.
+ * "operations" owns marking a screening technically FAILED. Reads also
+ * allow 'investor' to check their own screening status (ownership enforced
+ * in {@link AmlScreeningApplicationService}, same BOLA/IDOR rule as
+ * Portfolio/Investment/KYC Service, guide §12.2). {@code produces} declared
+ * explicitly — see {@code PortfolioController}'s identical Javadoc for why
+ * (openapi-generator TypeScript clients silently mis-parse JSON as a Blob
+ * without it).
  */
 @Tag(name = "AML Screenings", description = "AML screening System of Record (guide §8.3)")
 @RestController
-@RequestMapping("/api/v1/aml/screenings")
+@RequestMapping(value = "/api/v1/aml/screenings", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ScreeningController {
+
+    private static final String READ_ROLES = "hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR', 'INVESTOR')";
 
     private final AmlScreeningApplicationService amlScreeningApplicationService;
     private final ScreeningMapper screeningMapper;
@@ -49,14 +58,14 @@ public class ScreeningController {
 
     @Operation(summary = "Get an AML screening by id")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
+    @PreAuthorize(READ_ROLES)
     public ApiResponse<ScreeningResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(screeningMapper.toResponse(amlScreeningApplicationService.getById(id)));
     }
 
     @Operation(summary = "List AML screenings for a customer")
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
+    @PreAuthorize(READ_ROLES)
     public ApiResponse<List<ScreeningResponse>> listByCustomer(
             @RequestParam UUID customerId,
             @RequestParam(defaultValue = "0") int page,

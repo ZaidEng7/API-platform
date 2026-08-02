@@ -8,6 +8,7 @@ import com.company.aml.domain.event.AmlScreeningRequested;
 import com.company.aml.infrastructure.AmlScreeningJpaRepository;
 import com.company.platform.messaging.envelope.EventEnvelope;
 import com.company.platform.messaging.outbox.OutboxEventStore;
+import com.company.platform.security.CurrentUser;
 import com.company.platform.web.correlation.CorrelationIdFilter;
 import com.company.platform.web.exception.ApiException;
 import org.slf4j.MDC;
@@ -18,10 +19,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
+/**
+ * Enforces the same BOLA/IDOR ownership rule as Portfolio/Investment/KYC
+ * Service (guide §12.2): an 'investor' caller may only read their own AML
+ * screenings (customerId compared to the JWT {@code sub} claim); staff
+ * roles see any customer's.
+ */
 @Service
 public class AmlScreeningApplicationService {
+
+    private static final List<String> STAFF_ROLES = List.of("OPERATIONS", "COMPLIANCE", "CUSTOMER_SERVICE", "AUDITOR");
 
     private static final String REQUESTED_EVENT_TYPE = "customer.aml.requested";
     private static final String FAILED_EVENT_TYPE = "customer.aml.failed";
@@ -38,12 +48,18 @@ public class AmlScreeningApplicationService {
 
     @Transactional(readOnly = true)
     public AmlScreening getById(UUID id) {
-        return amlScreeningRepository.findById(id)
+        AmlScreening screening = amlScreeningRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "AML-4041", "AML screening not found: " + id));
+        enforceOwnership(screening);
+        return screening;
     }
 
+    /** @throws ApiException 403 if an investor-only caller queries another customer's screenings. */
     @Transactional(readOnly = true)
     public Page<AmlScreening> listByCustomer(UUID customerId, Pageable pageable) {
+        if (!isStaff() && !customerId.toString().equals(CurrentUser.subject().orElse(null))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "AML-4030", "You do not have access to that customer's AML screenings");
+        }
         return amlScreeningRepository.findByCustomerId(customerId, pageable);
     }
 
@@ -109,5 +125,19 @@ public class AmlScreeningApplicationService {
         var envelope = new EventEnvelope<>(UUID.randomUUID(), eventType, occurredAt, correlationId, PRODUCER, 1,
                 payload);
         outboxEventStore.write("AmlScreening", aggregateId.toString(), eventType, envelope, correlationId, PRODUCER);
+    }
+
+    private void enforceOwnership(AmlScreening screening) {
+        if (isStaff()) {
+            return;
+        }
+        String callerId = CurrentUser.subject().orElse(null);
+        if (!screening.getCustomerId().toString().equals(callerId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "AML-4030", "You do not have access to this AML screening");
+        }
+    }
+
+    private boolean isStaff() {
+        return STAFF_ROLES.stream().anyMatch(CurrentUser::hasRole);
     }
 }

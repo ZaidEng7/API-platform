@@ -6,9 +6,7 @@ import { AppShell, LoadingSpinner, OidcSecurityService, type NavLink } from 'sha
 /**
  * Root shell: resolves the OIDC session on load, shows a sign-in screen
  * when unauthenticated, otherwise wraps the routed pages in the shared
- * {@link AppShell}. Feature nav links are added here as each one lands
- * (Phase B) — deliberately empty for now rather than linking to routes
- * that don't exist yet.
+ * {@link AppShell}.
  */
 @Component({
   selector: 'app-root',
@@ -19,7 +17,11 @@ import { AppShell, LoadingSpinner, OidcSecurityService, type NavLink } from 'sha
 export class App implements OnInit {
   private readonly oidcSecurityService = inject(OidcSecurityService);
 
-  protected readonly navLinks: NavLink[] = [];
+  protected readonly navLinks: NavLink[] = [
+    { label: 'My Portfolio', path: '/portfolio', icon: 'pie_chart' },
+    { label: 'My Subscriptions', path: '/subscriptions', icon: 'receipt_long' },
+    { label: 'Compliance Status', path: '/compliance-status', icon: 'verified_user' },
+  ];
   protected readonly checkingAuth = signal(true);
   protected readonly isAuthenticated = signal(false);
   protected readonly userDisplayName = signal<string | null>(null);

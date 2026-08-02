@@ -1,0 +1,42 @@
+<h1 class="page-title">My Subscriptions</h1>
+
+@if (loading()) {
+  <lib-loading-spinner message="Loading your subscriptions…" />
+} @else if (loadError()) {
+  <lib-error-state
+    message="Couldn't load your subscriptions. Please try again."
+    (retry)="reload()"
+  />
+} @else if (subscriptions().length === 0) {
+  <p class="empty-state">You don't have any fund subscriptions yet.</p>
+} @else {
+  <table class="subscriptions-table">
+    <thead>
+      <tr>
+        <th>Fund</th>
+        <th>Quantity</th>
+        <th>Status</th>
+        <th>Requested</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (subscription of subscriptions(); track subscription.id) {
+        <tr>
+          <td>{{ subscription.fundCode }}</td>
+          <td>{{ subscription.quantity }}</td>
+          <td>
+            <mat-chip-set>
+              <mat-chip [class]="statusClass(subscription.status)">{{
+                subscription.status
+              }}</mat-chip>
+            </mat-chip-set>
+            @if (subscription.status === 'FAILED' && subscription.failureReason) {
+              <p class="failure-reason">{{ subscription.failureReason }}</p>
+            }
+          </td>
+          <td>{{ subscription.createdAt | date: 'medium' }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

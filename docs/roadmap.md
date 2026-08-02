@@ -142,13 +142,16 @@ Not one of the guide's seven numbered phases — §5.2 specifies the frontend st
   - [x] New CI job (`frontend-build-and-test`: lint, format check, build, unit test) alongside the existing Java matrix
   - [x] Push, PR, CI green, merge
   - **Found and fixed via live browser verification** (not caught by unit tests): the correlation-ID interceptor was attaching `X-Correlation-Id` to every `HttpClient` request, including the OIDC library's own calls to Keycloak — whose CORS policy doesn't allowlist that header, silently breaking the entire auth flow. Fixed by scoping the interceptor to the app's own API base URLs, mirroring how `secureRoutes` already scopes bearer-token attachment.
-- [ ] **Phase B — Client Portal** (investor-facing, built first)
-  - [ ] App shell: routing, layout, login/logout, route guards
-  - [ ] "My Portfolio" (Portfolio Service read), "My Subscriptions" (Investment Service read), KYC/AML status (read-only)
-  - [ ] Investor-initiated writes (e.g. self-service subscription) need backend changes first — Portfolio/Investment Service are staff-only writes today, a known documented limitation in both services' READMEs
-  - [ ] Jest component tests + Playwright E2E (login → view portfolio)
-  - [ ] Docker (multi-stage build → Nginx) + Helm values reusing `service-chart`
-  - [ ] Push, PR, CI green, merge
+- [x] **Phase B — Client Portal** (investor-facing, built first)
+  - [x] App shell: routing (`/portfolio`, `/subscriptions`, `/compliance-status`), layout, login/logout, route guards (auth gated at the app root, not per-route — every Client Portal view is investor-only)
+  - [x] "My Portfolio" (Portfolio Service read), "My Subscriptions" (Investment Service read), KYC/AML status (read-only)
+  - [x] Investor-initiated writes (e.g. self-service subscription) need backend changes first — Portfolio/Investment Service are staff-only writes today, a known documented limitation in both services' READMEs
+  - [x] Vitest component tests (17 tests — Playwright E2E not yet wired up, per the Testing decision above)
+  - [x] Docker (multi-stage build → Nginx) + Helm values reusing `service-chart` — see `frontend/README.md`'s Docker section
+  - [x] Push, PR, CI green, merge
+  - **Backend gap found and fixed, with user sign-off before proceeding**: KYC/AML Service had no `INVESTOR` role and no ownership filtering at all — an investor could not legally call either service's read endpoints. Fixed by mirroring Portfolio/Investment Service's existing ownership pattern (compare `customerId` to the JWT `sub`), with matching new ownership tests in both services.
+  - **Second backend bug found via live browser verification** (real seeded data through the Gateway, not caught by unit tests): none of Portfolio/Investment/KYC/AML Service declared `produces` on their `@RequestMapping`, so springdoc documented the response media type as the default wildcard instead of `application/json` — causing every openapi-generator TypeScript client's Angular `HttpClient` call to set `responseType: 'blob'` instead of `'json'`, silently returning `undefined` data despite a real, correct JSON response from the server. Fixed by declaring `produces = MediaType.APPLICATION_JSON_VALUE` on all four controllers; the same fix will be needed for Document/Fund/Payment/Reporting/Customer/Audit/Gateway-canary controllers whenever their frontend integration happens (Phase C, Phase D).
+  - Also closed the service-to-service auth gap in practice: Investment Service's saga calls to Customer/KYC/AML/Portfolio Service need `platform.security.service-auth.client-secret` configured (ADR 0001's mechanism) to actually authenticate — confirmed working during manual seed-data verification, not a new code change.
 - [ ] **Phase C — Admin Portal** (staff-facing, built after Client Portal)
   - [ ] App shell + role-based nav (operations/compliance/portfolio-manager/auditor)
   - [ ] KYC review queue, AML review queue, document review queue

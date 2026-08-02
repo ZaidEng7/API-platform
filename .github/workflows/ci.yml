@@ -409,7 +409,7 @@ jobs:
 
       - name: Lint the chart for every service and environment
         run: |
-          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service payment-service reporting-service audit-service; do
+          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service payment-service reporting-service audit-service client-portal; do
             for env in dev test staging prod; do
               helm lint deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \
@@ -426,7 +426,7 @@ jobs:
       - name: Validate rendered manifests and namespace/NetworkPolicy YAML against real K8s schemas
         run: |
           set -e
-          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service payment-service reporting-service audit-service; do
+          for svc in gateway customer-service kyc-service aml-service document-service fund-service portfolio-service investment-service payment-service reporting-service audit-service client-portal; do
             for env in dev test staging prod; do
               helm template $svc deployment/helm/service-chart \
                 -f deployment/helm/values/$svc.yaml \

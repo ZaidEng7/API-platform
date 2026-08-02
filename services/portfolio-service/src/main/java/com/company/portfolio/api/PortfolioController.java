@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -33,10 +34,17 @@ import java.util.UUID;
  * {@link PortfolioApplicationService}, per the layering
  * {@link com.company.platform.security.CurrentUser}'s own Javadoc
  * describes. Writes are staff-only — no investor self-service flow yet.
+ * {@code produces} is declared explicitly so springdoc documents
+ * {@code application/json} (not the default wildcard media type) —
+ * without it, openapi-generator's TypeScript client sets Angular's
+ * HttpClient {@code responseType: 'blob'} instead of {@code 'json'} (its
+ * {@code isJsonMime} check only matches an explicit JSON media type),
+ * silently breaking every generated client's response parsing even though
+ * the actual runtime response genuinely is JSON.
  */
 @Tag(name = "Portfolios", description = "Portfolio positions System of Record (guide §8.3)")
 @RestController
-@RequestMapping("/api/v1/portfolios")
+@RequestMapping(value = "/api/v1/portfolios", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PortfolioController {
 
     private static final String READ_ROLES = "hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER', 'AUDITOR', 'COMPLIANCE', 'INVESTOR')";
