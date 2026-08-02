@@ -23,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
@@ -63,9 +65,9 @@ class PortfolioServicePactVerificationTest {
 
     @State("portfolio 55555555-5555-5555-5555-555555555555 exists")
     void portfolioExists() {
-        when(portfolioApplicationService.recordPosition(PORTFOLIO_ID, "EQFND01", new BigDecimal("100")))
+        when(portfolioApplicationService.recordPosition(eq(PORTFOLIO_ID), eq("EQFND01"), eq(new BigDecimal("100")), any()))
                 .thenReturn(new Position(POSITION_ID, PORTFOLIO_ID, "EQFND01", new BigDecimal("100"),
-                        Instant.parse("2026-08-01T00:00:00Z")));
+                        Instant.parse("2026-08-01T00:00:00Z"), null));
     }
 
     @TestTemplate

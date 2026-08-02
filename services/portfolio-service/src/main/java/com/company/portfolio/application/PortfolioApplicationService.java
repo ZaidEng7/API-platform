@@ -12,6 +12,7 @@ import com.company.portfolio.domain.Position;
 import com.company.portfolio.domain.event.PortfolioOpened;
 import com.company.portfolio.domain.event.PositionRecorded;
 import com.company.portfolio.infrastructure.PortfolioJpaRepository;
+import com.company.portfolio.infrastructure.PositionInsertGuard;
 import com.company.portfolio.infrastructure.PositionJpaRepository;
 import com.company.portfolio.infrastructure.client.FundNavClient;
 import org.slf4j.MDC;
@@ -49,14 +50,17 @@ public class PortfolioApplicationService {
 
     private final PortfolioJpaRepository portfolioRepository;
     private final PositionJpaRepository positionRepository;
+    private final PositionInsertGuard positionInsertGuard;
     private final FundNavClient fundNavClient;
     private final OutboxEventStore outboxEventStore;
 
     public PortfolioApplicationService(PortfolioJpaRepository portfolioRepository,
-                                        PositionJpaRepository positionRepository, FundNavClient fundNavClient,
+                                        PositionJpaRepository positionRepository,
+                                        PositionInsertGuard positionInsertGuard, FundNavClient fundNavClient,
                                         OutboxEventStore outboxEventStore) {
         this.portfolioRepository = portfolioRepository;
         this.positionRepository = positionRepository;
+        this.positionInsertGuard = positionInsertGuard;
         this.fundNavClient = fundNavClient;
         this.outboxEventStore = outboxEventStore;
     }
@@ -135,21 +139,61 @@ public class PortfolioApplicationService {
         return portfolio;
     }
 
+    /**
+     * Idempotent on {@code sourceReference} when the caller supplies one
+     * (Investment Service passes its {@code Subscription} id) — a retried
+     * call (e.g. after a client-side timeout on a request that actually
+     * succeeded server-side) returns the original position instead of
+     * creating a duplicate. See {@link PositionInsertGuard}'s Javadoc for
+     * why the insert attempt has to happen in its own transaction.
+     */
     @Transactional
-    public Position recordPosition(UUID portfolioId, String fundCode, BigDecimal quantity) {
+    public Position recordPosition(UUID portfolioId, String fundCode, BigDecimal quantity, String sourceReference) {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PORTFOLIO-4041",
                         "Portfolio not found: " + portfolioId));
         // Writes are staff-only (controller-level @PreAuthorize), so no ownership
         // check here — unlike the read paths, there's no investor self-service flow yet.
 
-        Instant now = Instant.now();
-        Position position = positionRepository.save(new Position(UUID.randomUUID(), portfolio.getId(), fundCode,
-                quantity, now));
+        if (sourceReference != null && !sourceReference.isBlank()) {
+            var existing = positionRepository.findBySourceReference(sourceReference);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
 
-        var payload = new PositionRecorded(position.getId(), position.getPortfolioId(), position.getFundCode(),
-                position.getQuantity(), position.getCreatedAt());
-        publish(POSITION_RECORDED_EVENT_TYPE, position.getId().toString(), payload, position.getCreatedAt());
+        Instant now = Instant.now();
+        Position candidate = new Position(UUID.randomUUID(), portfolio.getId(), fundCode, quantity, now,
+                sourceReference);
+
+        Position position;
+        boolean wonRace;
+        if (sourceReference == null || sourceReference.isBlank()) {
+            position = positionRepository.save(candidate);
+            wonRace = true;
+        } else {
+            var inserted = positionInsertGuard.tryInsert(candidate);
+            if (inserted.isPresent()) {
+                position = inserted.get();
+                wonRace = true;
+            } else {
+                // Lost a genuine concurrent race: another call with the same
+                // sourceReference committed between our check above and our
+                // insert attempt. The winner already published the event —
+                // return its row without publishing a duplicate.
+                position = positionRepository.findBySourceReference(sourceReference)
+                        .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "PORTFOLIO-4091",
+                                "Position insert conflicted on sourceReference " + sourceReference
+                                        + " but no existing position was found"));
+                wonRace = false;
+            }
+        }
+
+        if (wonRace) {
+            var payload = new PositionRecorded(position.getId(), position.getPortfolioId(), position.getFundCode(),
+                    position.getQuantity(), position.getCreatedAt());
+            publish(POSITION_RECORDED_EVENT_TYPE, position.getId().toString(), payload, position.getCreatedAt());
+        }
 
         return position;
     }
