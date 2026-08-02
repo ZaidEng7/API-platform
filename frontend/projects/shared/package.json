@@ -1,0 +1,15 @@
+{
+  "name": "shared",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^22.1.0",
+    "@angular/core": "^22.1.0",
+    "@angular/router": "^22.1.0",
+    "@angular/material": "^22.1.0",
+    "angular-auth-oidc-client": "^21.0.2"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}
