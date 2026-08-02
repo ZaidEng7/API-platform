@@ -122,14 +122,42 @@ Not one of the guide's seven numbered phases — §5.2 specifies the frontend st
 
 **Already in place, unused until now:** Gateway's CORS allow-list already defaults to `http://localhost:4200` (Angular's default dev port); Keycloak's `gateway-portal` public client (Auth Code + PKCE) has existed since Phase 3.
 
-- [ ] 🧑‍💼 **Open decisions before Phase A starts**: which app to build first (Client Portal vs. Admin Portal); state-management approach (NgRx per the guide vs. Angular's newer Signals-based state APIs, which postdate the guide); auth library (`angular-oauth2-oidc` vs. `angular-auth-oidc-client`); design/branding direction (none exists yet beyond "Angular Material"); confirm Mobile stays out of scope for now.
-- [ ] **Phase A — Workspace + shared library**: scaffold the Angular workspace (`frontend/`, `projects/shared` + one project per app), TypeScript strict mode, Angular Material theme, Auth Code+PKCE against `gateway-portal`, auth + correlation-ID interceptors, `openapi-generator`-generated typed clients from the Gateway's `/v3/api-docs` aggregation, shared RFC 7807 error handling.
-- [ ] **Phase B — Client Portal** (investor-facing, read-heavy first): login, "my portfolio" (Portfolio Service), "my subscriptions" (Investment Service), KYC/AML status (read-only). Investor-initiated writes (e.g. self-service subscription) need backend changes first — Portfolio/Investment Service are staff-only writes today, a known documented limitation in both services' READMEs.
-- [ ] **Phase C — Admin Portal** (staff-facing, NgRx justified here per the guide's own example): KYC/AML review queues, document review, subscription confirm/cancel, payment settle/fail — every action already exposed by the 9 services' APIs, just needs a UI.
-- [ ] **Phase D — Real Phase 6 execution**: point Client Portal's Customer/Party lookup at the Gateway's existing `/api/v1/customer-lookup/{id}` canary endpoint — the first real consumer of the weighted-canary mechanism built as a demo in the Phase 6 starter. Migrate other legacy-adapter-backed reads the same way as they come up.
-- [ ] Testing: unit (Jasmine/Karma or Jest, TBD), E2E (Playwright or Cypress against a running Gateway)
-- [ ] CI/CD: new GitHub Actions job(s) alongside the existing Java matrix (lint, unit test, build, Trivy-scan); deployment via the same `service-chart` Helm pattern every Java service already uses, serving the static build through Nginx
-- [ ] **Not planned**: Mobile — guide names it as a separate consumer surface with no framework mandate; worth its own decision once the web apps exist and a real requirement shows up, not built speculatively now.
+**Decisions resolved:**
+- Build order: **Client Portal (Phase B) before Admin Portal (Phase C)**
+- State management: **NgRx for the Admin Portal** — following guide §5.2 as written ("NgRx only where state complexity justifies it (admin portal — yes)"), not a deviation to Signals
+- Testing: **Jest** (unit) + **Playwright** (E2E)
+- Auth library: **`angular-auth-oidc-client`**
+- Mobile: confirmed out of scope for now — no framework mandate in the guide, no real requirement yet
+- Design/branding: still undecided, doesn't block Phase A (only matters once there's UI to skin)
+
+- [ ] **Phase A — Workspace + shared library**
+  - [ ] Scaffold Angular workspace (plain Angular CLI multi-project workspace, no Nx), TypeScript strict mode, ESLint + Prettier
+  - [ ] Angular Material theme + base layout shell
+  - [ ] Auth: OIDC/PKCE against `gateway-portal` via `angular-auth-oidc-client` (login, logout, silent refresh, route guards)
+  - [ ] HTTP interceptors: auth (bearer token), correlation-ID (matches `CorrelationIdFilter`)
+  - [ ] Global error handling — RFC 7807 `problem+json` → consistent UI, 401/403 → redirect-to-login
+  - [ ] Generate typed API clients via `openapi-generator` against the Gateway's aggregated `/v3/api-docs`
+  - [ ] Minimal shared UI shell (nav, loading/error states)
+  - [ ] Jest unit tests for the shared lib itself
+  - [ ] New CI job (lint, build, unit test) alongside the existing Java matrix
+  - [ ] Push, PR, CI green, merge
+- [ ] **Phase B — Client Portal** (investor-facing, built first)
+  - [ ] App shell: routing, layout, login/logout, route guards
+  - [ ] "My Portfolio" (Portfolio Service read), "My Subscriptions" (Investment Service read), KYC/AML status (read-only)
+  - [ ] Investor-initiated writes (e.g. self-service subscription) need backend changes first — Portfolio/Investment Service are staff-only writes today, a known documented limitation in both services' READMEs
+  - [ ] Jest component tests + Playwright E2E (login → view portfolio)
+  - [ ] Docker (multi-stage build → Nginx) + Helm values reusing `service-chart`
+  - [ ] Push, PR, CI green, merge
+- [ ] **Phase C — Admin Portal** (staff-facing, built after Client Portal)
+  - [ ] App shell + role-based nav (operations/compliance/portfolio-manager/auditor)
+  - [ ] KYC review queue, AML review queue, document review queue
+  - [ ] Subscription management (confirm-payment/cancel), payment management (settle/fail)
+  - [ ] NgRx store setup for cross-entity state (review queues, dashboards)
+  - [ ] Jest component tests + Playwright E2E
+  - [ ] Docker + Helm values
+  - [ ] Push, PR, CI green, merge
+- [ ] **Phase D — Real Phase 6 execution**: point Client Portal's Customer/Party lookup at the Gateway's existing `/api/v1/customer-lookup/{id}` canary endpoint — the first real consumer of the weighted-canary mechanism built as a demo in the Phase 6 starter; update `docs/roadmap.md` Phase 6 once this lands, since it stops being "starter/demonstration only." Migrate other legacy-adapter-backed reads the same way as they come up.
+- [ ] **Not planned**: Mobile.
 
 ---
 
