@@ -6,7 +6,6 @@ import com.company.investment.domain.event.SubscriptionTimedOut;
 import com.company.investment.infrastructure.SubscriptionJpaRepository;
 import com.company.platform.messaging.envelope.EventEnvelope;
 import com.company.platform.messaging.outbox.OutboxEventStore;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,12 +39,22 @@ public class SubscriptionTimeoutProcessor {
     /**
      * Re-fetches {@code id} fresh (the caller's batch query may be stale by
      * the time this runs) and re-checks it's still eligible before timing
-     * it out. Returns {@code false} — logged by the caller, not an error
-     * here — if the row was concurrently confirmed/cancelled/already timed
-     * out, or lost the optimistic-lock race to one of those.
+     * it out. Returns {@code false} if the row was concurrently
+     * confirmed/cancelled/already timed out before this method's own read.
+     *
+     * @throws org.springframework.dao.OptimisticLockingFailureException if
+     *         the row was concurrently modified between this method's read
+     *         and its flush (i.e. it lost the race, rather than simply
+     *         arriving late to an already-changed row) — deliberately not
+     *         caught here. Catching it inside this {@code @Transactional}
+     *         method and returning normally would make Spring try to commit
+     *         an already-Postgres-aborted transaction, which throws its own
+     *         (different, uncaught) exception — see {@code PositionInsertGuard}'s
+     *         Javadoc for the same reasoning. The caller ({@link SubscriptionTimeoutJob})
+     *         catches this instead, outside this transaction's boundary.
      */
     @Transactional
-    public boolean tryTimeOut(UUID id) {
+    public boolean timeOut(UUID id) {
         Subscription subscription = subscriptionRepository.findById(id).orElse(null);
         if (subscription == null || subscription.getStatus() != SubscriptionStatus.AWAITING_PAYMENT
                 || subscription.getTimeoutAt() == null || subscription.getTimeoutAt().isAfter(Instant.now())) {
@@ -54,10 +63,11 @@ public class SubscriptionTimeoutProcessor {
 
         try {
             subscription.timeout();
-            subscriptionRepository.saveAndFlush(subscription);
-        } catch (IllegalStateException | OptimisticLockingFailureException e) {
+        } catch (IllegalStateException e) {
+            // No DB write attempted yet in this branch, so no transaction to poison.
             return false;
         }
+        subscriptionRepository.saveAndFlush(subscription);
 
         var payload = new SubscriptionTimedOut(subscription.getId(), subscription.getCustomerId(),
                 subscription.getUpdatedAt());

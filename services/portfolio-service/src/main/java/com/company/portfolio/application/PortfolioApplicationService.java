@@ -16,6 +16,7 @@ import com.company.portfolio.infrastructure.PositionInsertGuard;
 import com.company.portfolio.infrastructure.PositionJpaRepository;
 import com.company.portfolio.infrastructure.client.FundNavClient;
 import org.slf4j.MDC;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -172,11 +173,10 @@ public class PortfolioApplicationService {
             position = positionRepository.save(candidate);
             wonRace = true;
         } else {
-            var inserted = positionInsertGuard.tryInsert(candidate);
-            if (inserted.isPresent()) {
-                position = inserted.get();
+            try {
+                position = positionInsertGuard.insert(candidate);
                 wonRace = true;
-            } else {
+            } catch (DataIntegrityViolationException e) {
                 // Lost a genuine concurrent race: another call with the same
                 // sourceReference committed between our check above and our
                 // insert attempt. The winner already published the event —

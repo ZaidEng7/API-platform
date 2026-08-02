@@ -19,6 +19,7 @@ import com.company.platform.web.correlation.CorrelationIdFilter;
 import com.company.platform.web.exception.ApiException;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -147,20 +148,20 @@ public class SubscriptionApplicationService {
             eventPayload = new SubscriptionReserved(id, customerId, portfolioId, fundCode, quantity, now);
         }
 
-        var inserted = subscriptionInsertGuard.tryInsert(candidate);
-        if (inserted.isPresent()) {
+        try {
+            Subscription inserted = subscriptionInsertGuard.insert(candidate);
             publish(eventType, id.toString(), eventPayload, now);
-            return inserted.get();
+            return inserted;
+        } catch (DataIntegrityViolationException e) {
+            // Lost a genuine concurrent race: another request with the same
+            // idempotencyKey committed between our check above and our insert
+            // attempt. That request already published its own event — return
+            // its result rather than publishing a duplicate.
+            return subscriptionRepository.findByIdempotencyKey(idempotencyKey)
+                    .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "INV-4092",
+                            "Subscription insert conflicted on idempotencyKey " + idempotencyKey
+                                    + " but no existing subscription was found"));
         }
-
-        // Lost a genuine concurrent race: another request with the same
-        // idempotencyKey committed between our check above and our insert
-        // attempt. That request already published its own event — return
-        // its result rather than publishing a duplicate.
-        return subscriptionRepository.findByIdempotencyKey(idempotencyKey)
-                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "INV-4092",
-                        "Subscription insert conflicted on idempotencyKey " + idempotencyKey
-                                + " but no existing subscription was found"));
     }
 
     /**

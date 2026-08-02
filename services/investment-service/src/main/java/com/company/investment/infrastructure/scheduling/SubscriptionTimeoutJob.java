@@ -5,6 +5,7 @@ import com.company.investment.domain.SubscriptionStatus;
 import com.company.investment.infrastructure.SubscriptionJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -45,10 +46,14 @@ public class SubscriptionTimeoutJob {
                 SubscriptionStatus.AWAITING_PAYMENT, Instant.now()).stream().map(Subscription::getId).toList();
 
         for (UUID id : staleIds) {
-            if (timeoutProcessor.tryTimeOut(id)) {
-                log.warn("Subscription {} timed out awaiting payment", id);
-            } else {
-                log.debug("Subscription {} no longer eligible for timeout (concurrently modified or already handled)",
+            try {
+                if (timeoutProcessor.timeOut(id)) {
+                    log.warn("Subscription {} timed out awaiting payment", id);
+                } else {
+                    log.debug("Subscription {} no longer eligible for timeout (already handled before this run)", id);
+                }
+            } catch (OptimisticLockingFailureException e) {
+                log.debug("Subscription {} lost a concurrent race (e.g. confirmed/cancelled) while being timed out",
                         id);
             }
         }

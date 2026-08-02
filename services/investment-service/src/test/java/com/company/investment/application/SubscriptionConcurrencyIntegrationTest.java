@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -136,7 +137,11 @@ class SubscriptionConcurrencyIntegrationTest extends AbstractMessagingIntegratio
         });
         Thread timeoutThread = new Thread(() -> {
             await(barrier);
-            timeoutOutcome.set(subscriptionTimeoutProcessor.tryTimeOut(id));
+            try {
+                timeoutOutcome.set(subscriptionTimeoutProcessor.timeOut(id));
+            } catch (OptimisticLockingFailureException e) {
+                timeoutOutcome.set(false);
+            }
         });
 
         confirmThread.start();
