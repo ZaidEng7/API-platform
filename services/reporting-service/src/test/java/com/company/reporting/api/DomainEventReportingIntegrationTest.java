@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -244,6 +245,214 @@ class DomainEventReportingIntegrationTest extends AbstractMessagingIntegrationTe
                         .andExpect(jsonPath("$.data.length()").value(1))
                         .andExpect(jsonPath("$.data[0].status").value("FAILED"))
                         .andExpect(jsonPath("$.data[0].failureReason").value("KYC check rejected")));
+    }
+
+    @Test
+    @WithMockUser(roles = "COMPLIANCE")
+    void kycDecidedWithoutAPriorRequestMaterializesUsingTheFallbackView() throws Exception {
+        UUID checkId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.kyc.rejected", Map.of(
+                "checkId", checkId,
+                "customerId", customerId,
+                "status", "REJECTED",
+                "reason", "Expired ID document",
+                "decidedBy", "compliance-officer-1",
+                "decidedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/kyc-checks").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("REJECTED")));
+    }
+
+    @Test
+    @WithMockUser(roles = "COMPLIANCE")
+    void amlCompletedWithoutAPriorRequestMaterializesUsingTheFallbackView() throws Exception {
+        UUID screeningId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.aml.cleared", Map.of(
+                "screeningId", screeningId,
+                "customerId", customerId,
+                "outcome", "CLEAR",
+                "notes", "",
+                "completedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/aml-screenings").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].outcome").value("CLEAR")));
+    }
+
+    @Test
+    @WithMockUser(roles = "COMPLIANCE")
+    void amlRequestedThenFailedMaterializesAsFailed() throws Exception {
+        UUID screeningId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.aml.requested", Map.of(
+                "screeningId", screeningId,
+                "customerId", customerId,
+                "requestedAt", Instant.now()));
+        publish("customer.aml.failed", Map.of(
+                "screeningId", screeningId,
+                "customerId", customerId,
+                "reason", "Provider timeout",
+                "failedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/aml-screenings").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("FAILED")));
+    }
+
+    @Test
+    @WithMockUser(roles = "OPERATIONS")
+    void documentReviewedWithoutAPriorUploadMaterializesUsingTheFallbackView() throws Exception {
+        UUID documentId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.document.verified", Map.of(
+                "documentId", documentId,
+                "customerId", customerId,
+                "status", "VERIFIED",
+                "notes", "",
+                "reviewedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/documents").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("VERIFIED")));
+    }
+
+    @Test
+    @WithMockUser(roles = "PORTFOLIO_MANAGER")
+    void subscriptionReservedThenCancelledMaterializesAsCancelled() throws Exception {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID portfolioId = UUID.randomUUID();
+
+        publish("investment.subscription.reserved", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "portfolioId", portfolioId,
+                "fundCode", "EQFND01",
+                "quantity", new BigDecimal("25.0000"),
+                "reservedAt", Instant.now()));
+        publish("investment.subscription.cancelled", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "cancelledAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/subscriptions").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("CANCELLED")));
+    }
+
+    @Test
+    @WithMockUser(roles = "PORTFOLIO_MANAGER")
+    void subscriptionReservedThenTimedOutMaterializesAsTimedOut() throws Exception {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID portfolioId = UUID.randomUUID();
+
+        publish("investment.subscription.reserved", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "portfolioId", portfolioId,
+                "fundCode", "EQFND01",
+                "quantity", new BigDecimal("25.0000"),
+                "reservedAt", Instant.now()));
+        publish("investment.subscription.timed-out", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "timedOutAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/subscriptions").param("customerId", customerId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.length()").value(1))
+                        .andExpect(jsonPath("$.data[0].status").value("TIMED_OUT")));
+    }
+
+    @Test
+    @WithMockUser(roles = "PORTFOLIO_MANAGER")
+    void listingSubscriptionsWithoutACustomerIdFilterReturnsAllCustomers() throws Exception {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("investment.subscription.reserved", Map.of(
+                "subscriptionId", subscriptionId,
+                "customerId", customerId,
+                "portfolioId", UUID.randomUUID(),
+                "fundCode", "EQFND01",
+                "quantity", new BigDecimal("10.0000"),
+                "reservedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/subscriptions"))
+                        .andExpect(status().isOk())
+                        .andExpect(content().string(org.hamcrest.Matchers.containsString(subscriptionId.toString()))));
+    }
+
+    @Test
+    @WithMockUser(roles = "COMPLIANCE")
+    void listingKycChecksWithoutACustomerIdFilterReturnsAllCustomers() throws Exception {
+        UUID checkId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.kyc.requested", Map.of(
+                "checkId", checkId,
+                "customerId", customerId,
+                "requestedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/kyc-checks"))
+                        .andExpect(status().isOk())
+                        .andExpect(content().string(org.hamcrest.Matchers.containsString(checkId.toString()))));
+    }
+
+    @Test
+    @WithMockUser(roles = "COMPLIANCE")
+    void listingAmlScreeningsWithoutACustomerIdFilterReturnsAllCustomers() throws Exception {
+        UUID screeningId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.aml.requested", Map.of(
+                "screeningId", screeningId,
+                "customerId", customerId,
+                "requestedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/aml-screenings"))
+                        .andExpect(status().isOk())
+                        .andExpect(content().string(org.hamcrest.Matchers.containsString(screeningId.toString()))));
+    }
+
+    @Test
+    @WithMockUser(roles = "OPERATIONS")
+    void listingDocumentsWithoutACustomerIdFilterReturnsAllCustomers() throws Exception {
+        UUID documentId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        publish("customer.document.uploaded", Map.of(
+                "documentId", documentId,
+                "customerId", customerId,
+                "documentType", "PASSPORT",
+                "uploadedAt", Instant.now()));
+
+        await().pollInSameThread().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+                mockMvc.perform(get("/api/v1/reports/documents"))
+                        .andExpect(status().isOk())
+                        .andExpect(content().string(org.hamcrest.Matchers.containsString(documentId.toString()))));
     }
 
     @Test
