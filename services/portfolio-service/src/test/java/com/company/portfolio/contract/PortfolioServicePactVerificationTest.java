@@ -8,6 +8,7 @@ import au.com.dius.pact.provider.spring.spring7.PactVerificationSpring7Provider;
 import au.com.dius.pact.provider.spring.spring7.Spring7MockMvcTestTarget;
 import com.company.portfolio.application.PortfolioApplicationService;
 import com.company.portfolio.domain.Position;
+import com.company.portfolio.infrastructure.PositionInsertGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -57,6 +58,14 @@ class PortfolioServicePactVerificationTest {
 
     @MockitoBean
     private PortfolioApplicationService portfolioApplicationService;
+
+    // PositionInsertGuard needs PositionJpaRepository, which doesn't exist
+    // in this JPA-excluded context (see the @SpringBootTest properties
+    // above) — mocked here purely so Spring can satisfy the bean graph; it's
+    // never actually invoked since portfolioApplicationService itself
+    // (the only thing that calls it) is fully mocked above.
+    @MockitoBean
+    private PositionInsertGuard positionInsertGuard;
 
     @BeforeEach
     void setUpTestTarget(PactVerificationContext context) {
