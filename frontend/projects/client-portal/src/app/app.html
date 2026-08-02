@@ -1,0 +1,18 @@
+@if (checkingAuth()) {
+  <lib-loading-spinner message="Signing you in…" />
+} @else if (!isAuthenticated()) {
+  <div class="signed-out">
+    <h1>Client Portal</h1>
+    <p>Sign in to view your portfolio and subscriptions.</p>
+    <button mat-flat-button color="primary" (click)="login()">Sign in</button>
+  </div>
+} @else {
+  <lib-app-shell
+    appTitle="Client Portal"
+    [navLinks]="navLinks"
+    [userDisplayName]="userDisplayName()"
+    (logout)="logout()"
+  >
+    <router-outlet />
+  </lib-app-shell>
+}
