@@ -11,6 +11,7 @@
     "build": "npm run build:shared && npm run build:client-portal && npm run build:admin-portal",
     "test": "ng test shared && ng test client-portal && ng test admin-portal",
     "lint": "ng lint",
+    "format:check": "prettier --check .",
     "codegen": "bash scripts/generate-api-client.sh",
     "codegen:gateway": "bash scripts/generate-api-client.sh gateway http://localhost:8080/v3/api-docs"
   },
