@@ -2,6 +2,7 @@
 
 **Status:** Accepted — strategy documented, not implemented yet
 **Date:** 2026-08-01
+**Updated 2026-08-02:** sharpened the revisit criteria after further research (trigger 4, Redis-backed rate limiting) — no change to the core decision.
 
 ## Context
 
@@ -24,8 +25,9 @@ Building a distributed cache (Redis) for a consistency problem that hasn't actua
 1. A service scales to multiple replicas *and* a cached value's staleness window matters enough that per-replica divergence would cause a real bug (unlike NAV's once-daily tolerance today).
 2. A second service needs to cache something that must stay consistent with what another service (or another replica of the same service) sees.
 3. Cache warm-up cost becomes expensive enough that losing an in-memory cache on every pod restart/redeploy is itself a problem Redis's persistence would solve.
+4. **The Gateway needs distributed rate limiting.** `gateway/README.md`'s "Known limitations" already flags "No rate limiting / API key validation for partners yet" — Spring Cloud Gateway's built-in `RequestRateLimiter` filter is Redis-backed (`RedisRateLimiter`) by default, using a token-bucket algorithm that only works correctly across multiple Gateway replicas if the bucket state is shared. This is, in practice, the **most likely real trigger** to actually adopt Redis in this platform — more likely than a second application-level cache — since it directly closes an already-identified gap rather than a hypothetical one.
 
-Redis is the recommended mechanism specifically because Spring's Cache abstraction makes the switch from Caffeine a `CacheManager` bean swap, not a rewrite of caching call sites — low cost to adopt exactly when needed, which is why standing it up preemptively isn't worth the added operational surface (a new stateful dependency in `deployment/docker`, a new Testcontainers dependency in tests) today.
+Redis is the recommended mechanism specifically because Spring's Cache abstraction makes the switch from Caffeine a `CacheManager` bean swap, not a rewrite of caching call sites — low cost to adopt exactly when needed, which is why standing it up preemptively isn't worth the added operational surface (a new stateful dependency in `deployment/docker`, a new Testcontainers dependency in tests) today. If trigger 4 above fires first, the same Redis instance can then also back `FundNavProvider`'s `CacheManager` if/when triggers 1-3 apply — one piece of infrastructure serving both needs.
 
 ## Consequences
 
