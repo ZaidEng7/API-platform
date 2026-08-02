@@ -125,22 +125,23 @@ Not one of the guide's seven numbered phases — §5.2 specifies the frontend st
 **Decisions resolved:**
 - Build order: **Client Portal (Phase B) before Admin Portal (Phase C)**
 - State management: **NgRx for the Admin Portal** — following guide §5.2 as written ("NgRx only where state complexity justifies it (admin portal — yes)"), not a deviation to Signals
-- Testing: **Jest** (unit) + **Playwright** (E2E)
+- Testing: **Vitest** (unit — switched from the originally-chosen Jest once implementation showed Angular's native `@angular/build:unit-test` builder only supports Karma/Vitest, not Jest) + **Playwright** (E2E, not yet wired up)
 - Auth library: **`angular-auth-oidc-client`**
 - Mobile: confirmed out of scope for now — no framework mandate in the guide, no real requirement yet
 - Design/branding: still undecided, doesn't block Phase A (only matters once there's UI to skin)
 
-- [ ] **Phase A — Workspace + shared library**
-  - [ ] Scaffold Angular workspace (plain Angular CLI multi-project workspace, no Nx), TypeScript strict mode, ESLint + Prettier
-  - [ ] Angular Material theme + base layout shell
-  - [ ] Auth: OIDC/PKCE against `gateway-portal` via `angular-auth-oidc-client` (login, logout, silent refresh, route guards)
-  - [ ] HTTP interceptors: auth (bearer token), correlation-ID (matches `CorrelationIdFilter`)
-  - [ ] Global error handling — RFC 7807 `problem+json` → consistent UI, 401/403 → redirect-to-login
-  - [ ] Generate typed API clients via `openapi-generator` against the Gateway's aggregated `/v3/api-docs`
-  - [ ] Minimal shared UI shell (nav, loading/error states)
-  - [ ] Jest unit tests for the shared lib itself
-  - [ ] New CI job (lint, build, unit test) alongside the existing Java matrix
-  - [ ] Push, PR, CI green, merge
+- [x] **Phase A — Workspace + shared library** ([PR #57](https://github.com/ZaidEng7/API-platform/pull/57))
+  - [x] Scaffold Angular workspace (plain Angular CLI multi-project workspace, no Nx: `shared` lib + Client Portal + Admin Portal), TypeScript strict mode, ESLint + Prettier
+  - [x] Angular Material 3 theme + base layout shell (`lib-app-shell`, `lib-loading-spinner`, `lib-error-state`)
+  - [x] Auth: OIDC/PKCE against `gateway-portal` via `angular-auth-oidc-client` (`provideKeycloakAuth()`) — verified live end-to-end against a real Keycloak instance with the seeded `investor.test` user (sign-in → redirect back authenticated → logout)
+  - [x] HTTP interceptors: auth (bearer token, via the library's own `authInterceptor()`), correlation-ID (matches `CorrelationIdFilter`)
+  - [x] Global error handling — RFC 7807 `problem+json` → notification service, 401 → re-authorize, 403/other → error notification
+  - [x] Generate typed API client via `openapi-generator` against the Gateway's own live `/v3/api-docs` (proof-of-concept, namespaced as `GatewayApiClient`); generating clients for the 9 real business services needs the full docker-compose stack (documented in `frontend/README.md`) or a future CI step
+  - [x] Minimal shared UI shell (nav, loading/error states)
+  - [x] Vitest unit tests for the shared lib and both app shells (33 tests — see Testing decision above)
+  - [x] New CI job (`frontend-build-and-test`: lint, format check, build, unit test) alongside the existing Java matrix
+  - [x] Push, PR, CI green, merge
+  - **Found and fixed via live browser verification** (not caught by unit tests): the correlation-ID interceptor was attaching `X-Correlation-Id` to every `HttpClient` request, including the OIDC library's own calls to Keycloak — whose CORS policy doesn't allowlist that header, silently breaking the entire auth flow. Fixed by scoping the interceptor to the app's own API base URLs, mirroring how `secureRoutes` already scopes bearer-token attachment.
 - [ ] **Phase B — Client Portal** (investor-facing, built first)
   - [ ] App shell: routing, layout, login/logout, route guards
   - [ ] "My Portfolio" (Portfolio Service read), "My Subscriptions" (Investment Service read), KYC/AML status (read-only)
