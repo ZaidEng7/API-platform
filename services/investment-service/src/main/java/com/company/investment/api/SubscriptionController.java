@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,10 +30,13 @@ import java.util.UUID;
  * authenticated Investor restricted to their own ({@code ownerId})
  * subscriptions on reads. Writes are staff-only — no investor
  * self-service, same known limitation Portfolio Service documented.
+ * {@code produces} declared explicitly — see {@code PortfolioController}'s
+ * identical Javadoc for why (openapi-generator TypeScript clients silently
+ * mis-parse JSON as a Blob without it).
  */
 @Tag(name = "Subscriptions", description = "Fund subscription saga (guide §8.4)")
 @RestController
-@RequestMapping("/api/v1/subscriptions")
+@RequestMapping(value = "/api/v1/subscriptions", produces = MediaType.APPLICATION_JSON_VALUE)
 public class SubscriptionController {
 
     private static final String READ_ROLES = "hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER', 'AUDITOR', 'COMPLIANCE', 'INVESTOR')";

@@ -4,11 +4,13 @@ import com.company.platform.test.AbstractMessagingIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -19,6 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Real Postgres + RabbitMQ via Testcontainers (guide §20), with common-security's
  * method-level {@code @PreAuthorize} enforced regardless of the (empty in
  * tests) {@code issuer-uri} — see CommonSecurityAutoConfiguration's Javadoc.
+ * Ownership (guide §12.2) tests use {@code jwt()}, not {@code @WithMockUser}
+ * — see PortfolioControllerIntegrationTest's identical rationale.
  */
 class KycCheckControllerIntegrationTest extends AbstractMessagingIntegrationTest {
 
@@ -111,6 +115,50 @@ class KycCheckControllerIntegrationTest extends AbstractMessagingIntegrationTest
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.meta.totalElements").value(2));
+    }
+
+    @Test
+    void investorCanViewTheirOwnKycCheck() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        String location = requestCheck(customerId);
+
+        mockMvc.perform(get(location).with(jwt()
+                        .jwt(jwtBuilder -> jwtBuilder.subject(customerId.toString()))
+                        .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerId").value(customerId.toString()));
+    }
+
+    @Test
+    void investorCannotViewAnotherCustomersKycCheck() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        UUID someoneElse = UUID.randomUUID();
+        String location = requestCheck(customerId);
+
+        mockMvc.perform(get(location).with(jwt()
+                        .jwt(jwtBuilder -> jwtBuilder.subject(someoneElse.toString()))
+                        .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("KYC-4030"));
+    }
+
+    @Test
+    void investorCanListTheirOwnChecksButNotSomeoneElses() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        UUID someoneElse = UUID.randomUUID();
+        requestCheck(customerId);
+
+        mockMvc.perform(get("/api/v1/kyc-checks").param("customerId", customerId.toString())
+                        .with(jwt().jwt(jwtBuilder -> jwtBuilder.subject(customerId.toString()))
+                                .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.totalElements").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        mockMvc.perform(get("/api/v1/kyc-checks").param("customerId", customerId.toString())
+                        .with(jwt().jwt(jwtBuilder -> jwtBuilder.subject(someoneElse.toString()))
+                                .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("KYC-4030"));
     }
 
     private String requestCheck(UUID customerId) throws Exception {

@@ -60,14 +60,54 @@ npm run codegen:gateway   # proof-of-concept: Gateway's own aggregated spec
 npm run codegen -- <service-name> <spec-url>   # generic, for any other service
 ```
 
-Proven end-to-end against the Gateway's own live `/v3/api-docs` (generated
-`GatewayApiClient` covers the Phase 6 canary endpoints: `canary-admin`,
-`customer-lookup-canary`). The 9 real business services are only reachable through the
-Gateway's `/api-docs/<service>/v3/api-docs` proxy routes, which requires the full
-docker-compose stack (Postgres, RabbitMQ, Keycloak, and every service) running — not
-available in this sandbox. Generating those clients happens either via local Docker
-(`docker compose up` per `deployment/docker/README.md`, then run the script per-service)
-or as a future CI step once a portal feature actually needs one.
+Proven end-to-end against the Gateway's own live `/v3/api-docs` (`GatewayApiClient`,
+Phase A) and, as of Phase B, against four real business services through the Gateway's
+`/api-docs/<service>/v3/api-docs` proxy routes: `PortfolioApiClient`,
+`InvestmentApiClient`, `KycApiClient`, `AmlApiClient` — used by Client Portal's My
+Portfolio, My Subscriptions, and Compliance Status features. Generating a client for any
+of the remaining business services needs the full docker-compose stack (Postgres,
+RabbitMQ, Keycloak, and the target service) running locally first.
+
+Each backend `@RequestMapping` must declare `produces = MediaType.APPLICATION_JSON_VALUE`
+for its generated client to work at all — without it, springdoc documents the response
+as the default wildcard media type, and openapi-generator's TypeScript template sets
+Angular's `HttpClient` `responseType: 'blob'` instead of `'json'`, silently breaking
+response parsing even though the real runtime response is genuinely JSON. Portfolio,
+Investment, KYC, and AML Service controllers already declare this; the remaining
+business services will need the same one-line fix before their specs can be used here.
+
+## Resolving "my own id"
+
+None of the backend services expose a `/me` endpoint — Portfolio/Investment Service
+compare a caller-supplied `ownerId` query param to the JWT `sub` claim to enforce
+ownership (guide §12.2), and KYC/AML Service do the same with `customerId`. `shared`'s
+`CurrentUserService` decodes `sub` from the OIDC access token
+(`OidcSecurityService.getPayloadFromAccessToken()`) and exposes it as a signal
+(`subjectId`) — every investor-scoped feature reads this instead of calling a
+non-existent "current user" endpoint.
+
+## Docker
+
+Each app is a separate multi-stage build (Angular CLI → static files → Nginx), using
+`frontend/Dockerfile` as a build-arg-parameterized template (mirrors the root
+`Dockerfile`'s pattern for the Java services) with `frontend/` itself as the build
+context — the Angular workspace has no dependency on the Java modules.
+
+```bash
+docker build -f frontend/Dockerfile --build-arg PROJECT=client-portal -t client-portal frontend
+docker build -f frontend/Dockerfile --build-arg PROJECT=admin-portal -t admin-portal frontend
+```
+
+`frontend/nginx.conf` serves `dist/<project>/browser` with a SPA fallback (`try_files
+... /index.html`) for client-side routing, `Cache-Control: no-cache` on `index.html`, and
+long-lived immutable caching on hashed build assets. Angular's `environment.ts` is baked
+into the JS bundle at _build_ time, not read from the container's environment — there is
+no runtime config.json/env-var mechanism yet, since every environment currently points at
+the same localhost addresses (no real deployment domain exists yet).
+
+Helm values for Client Portal (`deployment/helm/values/client-portal.yaml`) reuse the
+same generic `service-chart` the Java services use, overriding `service.port`/
+`probes.*Path` for a static Nginx container instead of a Spring Boot actuator.
 
 ## Linting/formatting
 

@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,13 +28,21 @@ import java.util.UUID;
  * Role gates follow the realm's own role descriptions
  * (platform/identity/realm-export.json): "compliance" is described as
  * "Compliance/AML/KYC review and sign-off" — the decision endpoint is
- * restricted to it alone. Reads and requesting a check are open to the
- * staff roles that would plausibly initiate/track one.
+ * restricted to it alone. Reads are open to the staff roles that would
+ * plausibly initiate/track one, plus 'investor' to check their own status
+ * (ownership enforced in {@link KycCheckApplicationService}, same BOLA/IDOR
+ * rule as Portfolio/Investment Service, guide §12.2). Requesting a check
+ * stays staff-only — an investor doesn't self-initiate a KYC review.
+ * {@code produces} declared explicitly — see {@code PortfolioController}'s
+ * identical Javadoc for why (openapi-generator TypeScript clients silently
+ * mis-parse JSON as a Blob without it).
  */
 @Tag(name = "KYC Checks", description = "KYC status System of Record (guide §8.3)")
 @RestController
-@RequestMapping("/api/v1/kyc-checks")
+@RequestMapping(value = "/api/v1/kyc-checks", produces = MediaType.APPLICATION_JSON_VALUE)
 public class KycCheckController {
+
+    private static final String READ_ROLES = "hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR', 'INVESTOR')";
 
     private final KycCheckApplicationService kycCheckApplicationService;
     private final KycCheckMapper kycCheckMapper;
@@ -45,14 +54,14 @@ public class KycCheckController {
 
     @Operation(summary = "Get a KYC check by id")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
+    @PreAuthorize(READ_ROLES)
     public ApiResponse<KycCheckResponse> getById(@PathVariable UUID id) {
         return ApiResponse.of(kycCheckMapper.toResponse(kycCheckApplicationService.getById(id)));
     }
 
     @Operation(summary = "List KYC checks for a customer")
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPERATIONS', 'COMPLIANCE', 'CUSTOMER_SERVICE', 'AUDITOR')")
+    @PreAuthorize(READ_ROLES)
     public ApiResponse<List<KycCheckResponse>> listByCustomer(
             @RequestParam UUID customerId,
             @RequestParam(defaultValue = "0") int page,

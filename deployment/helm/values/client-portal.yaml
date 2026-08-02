@@ -1,0 +1,25 @@
+# Service-specific values for Client Portal (Angular SPA served by Nginx —
+# frontend/Dockerfile, not the Java services' root Dockerfile). See
+# gateway.yaml for the full install command pattern.
+#
+# Unlike the Java services, there are no runtime env vars here: Angular's
+# environment.ts is baked into the JS bundle at *build* time (Angular CLI's
+# file-replacement mechanism), not read from the container's environment —
+# so `environment.apiBaseUrl`/`environment.keycloak.*` are fixed per image
+# build, not per-deployment-environment. This matches every environment
+# currently pointing at the same localhost addresses (no real
+# staging/prod ingress domain exists yet in this project) — revisit with a
+# runtime-fetched config.json if/when that changes.
+
+nameOverride: client-portal
+
+image:
+  repository: client-portal
+
+service:
+  port: 80
+  targetPort: 80
+
+probes:
+  livenessPath: /
+  readinessPath: /

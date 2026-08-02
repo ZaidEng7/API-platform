@@ -17,3 +17,9 @@ export { OidcSecurityService, autoLoginPartialRoutesGuard } from 'angular-auth-o
 // provideApi/APIS symbols that would collide if re-exported flat once more services
 // are generated here.
 export * as GatewayApiClient from './lib/generated-api/gateway';
+export * as PortfolioApiClient from './lib/generated-api/portfolio-service';
+export * as InvestmentApiClient from './lib/generated-api/investment-service';
+export * as KycApiClient from './lib/generated-api/kyc-service';
+export * as AmlApiClient from './lib/generated-api/aml-service';
+
+export * from './lib/current-user/current-user.service';

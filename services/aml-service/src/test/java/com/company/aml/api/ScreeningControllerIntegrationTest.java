@@ -4,11 +4,13 @@ import com.company.platform.test.AbstractMessagingIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * method-level {@code @PreAuthorize} enforced regardless of the (empty in
  * tests) {@code issuer-uri}. The request endpoint returns {@code 202
  * Accepted} per guide §10.3's own async-operation example, not {@code 201}.
+ * Ownership (guide §12.2) tests use {@code jwt()}, not {@code @WithMockUser}
+ * — see PortfolioControllerIntegrationTest's identical rationale.
  */
 class ScreeningControllerIntegrationTest extends AbstractMessagingIntegrationTest {
 
@@ -133,6 +137,50 @@ class ScreeningControllerIntegrationTest extends AbstractMessagingIntegrationTes
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.meta.totalElements").value(2));
+    }
+
+    @Test
+    void investorCanViewTheirOwnScreening() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        String location = requestScreening(customerId);
+
+        mockMvc.perform(get(location).with(jwt()
+                        .jwt(jwtBuilder -> jwtBuilder.subject(customerId.toString()))
+                        .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerId").value(customerId.toString()));
+    }
+
+    @Test
+    void investorCannotViewAnotherCustomersScreening() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        UUID someoneElse = UUID.randomUUID();
+        String location = requestScreening(customerId);
+
+        mockMvc.perform(get(location).with(jwt()
+                        .jwt(jwtBuilder -> jwtBuilder.subject(someoneElse.toString()))
+                        .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("AML-4030"));
+    }
+
+    @Test
+    void investorCanListTheirOwnScreeningsButNotSomeoneElses() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        UUID someoneElse = UUID.randomUUID();
+        requestScreening(customerId);
+
+        mockMvc.perform(get("/api/v1/aml/screenings").param("customerId", customerId.toString())
+                        .with(jwt().jwt(jwtBuilder -> jwtBuilder.subject(customerId.toString()))
+                                .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.totalElements").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        mockMvc.perform(get("/api/v1/aml/screenings").param("customerId", customerId.toString())
+                        .with(jwt().jwt(jwtBuilder -> jwtBuilder.subject(someoneElse.toString()))
+                                .authorities(new SimpleGrantedAuthority("ROLE_INVESTOR"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("AML-4030"));
     }
 
     private String requestScreening(UUID customerId) throws Exception {

@@ -1,0 +1,61 @@
+<h1 class="page-title">My Portfolio</h1>
+
+@if (loading()) {
+  <lib-loading-spinner message="Loading your portfolios…" />
+} @else if (loadError()) {
+  <lib-error-state message="Couldn't load your portfolios. Please try again." (retry)="reload()" />
+} @else if (portfolios().length === 0) {
+  <p class="empty-state">You don't have any portfolios yet.</p>
+} @else {
+  <div class="portfolio-list">
+    @for (portfolio of portfolios(); track portfolio.id) {
+      <mat-card class="portfolio-card">
+        <mat-card-header>
+          <mat-card-title>{{ portfolio.name }}</mat-card-title>
+          <mat-card-subtitle
+            >{{ portfolio.currency }} &middot; {{ portfolio.status }}</mat-card-subtitle
+          >
+        </mat-card-header>
+        <mat-card-actions>
+          <button mat-stroked-button (click)="viewHoldings(portfolio.id)">View holdings</button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+
+  @if (selectedPortfolioId()) {
+    <div class="holdings">
+      @if (valuationLoading()) {
+        <lib-loading-spinner message="Loading holdings…" [diameter]="32" />
+      } @else if (valuationError()) {
+        <lib-error-state
+          message="Couldn't load holdings for this portfolio."
+          (retry)="viewHoldings(selectedPortfolioId())"
+        />
+      } @else if (valuation(); as v) {
+        <h2>Holdings</h2>
+        <table class="holdings-table">
+          <thead>
+            <tr>
+              <th>Fund</th>
+              <th>Quantity</th>
+              <th>NAV/share</th>
+              <th>Market value</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (position of v.positions; track position.fundCode) {
+              <tr>
+                <td>{{ position.fundCode }}</td>
+                <td>{{ position.quantity }}</td>
+                <td>{{ position.navPerShare }}</td>
+                <td>{{ position.marketValue }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p class="total">Total value: {{ v.totalValue }} {{ v.currency }}</p>
+      }
+    </div>
+  }
+}
