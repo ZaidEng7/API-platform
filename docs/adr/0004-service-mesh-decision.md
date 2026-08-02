@@ -2,6 +2,7 @@
 
 **Status:** Accepted — not adopted, revisit criteria below
 **Date:** 2026-08-01
+**Updated 2026-08-02:** named a concrete lighter-weight mechanism (Cilium CNI + WireGuard transparent encryption) to close the mTLS gap without a full mesh, after further research — no change to the core decision (mesh itself still not adopted).
 
 ## Context
 
@@ -22,17 +23,19 @@ A service mesh (Istio, Linkerd) would add automatic mTLS between pods and much r
 
 ## Decision
 
-Do not adopt a service mesh now. The application-level OAuth2 Client Credentials auth from ADR 0001 remains the only service-to-service security mechanism; the mTLS/transport-level gap that ADR flagged stays open and undecided at the mesh-vs-ingress-mTLS level.
+Do not adopt a service mesh now. The application-level OAuth2 Client Credentials auth from ADR 0001 remains the only service-to-service security mechanism; the mTLS/transport-level gap that ADR flagged stays open.
 
-**Revisit this decision if any of these become real:**
+**When a persistent cluster does exist**, close that gap with a CNI-level mechanism before reaching for a full mesh: specifically, **Cilium as the cluster's CNI, with WireGuard transparent encryption enabled** (`encryption: wireguard` in Cilium's Helm values). This encrypts all pod-to-pod traffic at the kernel/network layer automatically, cluster-wide, with no sidecars, no per-service code changes, and none of a mesh's control-plane operational burden — it's a CNI configuration choice, not a new platform to run. It gets this platform real wire-level encryption (closing guide §8.1's literal "never plaintext inside the cluster" ask) without paying for a mesh's traffic-management features this platform hasn't needed yet (see the Phase 6 canary precedent below). It does **not** provide mesh-style workload *identity* verification (mTLS certificates proving "this is actually the Portfolio Service," not just "this traffic is encrypted") — if that stronger guarantee is ever needed, that's the point to escalate to a full mesh (Istio/Linkerd), not before.
 
-1. A **persistent, multi-node cluster** actually exists to run a mesh's control plane and sidecars on (today there is none — see `docs/ci-cd.md`'s "no persistent staging environment" gap).
-2. **Multi-cluster or multi-region** deployment, where mesh-level cross-cluster service discovery/routing would solve a real problem app-level auth doesn't.
+**Revisit toward a full mesh if any of these become real** (Cilium/WireGuard above should be tried first in every case):
+
+1. **Workload identity**, not just encryption, is needed — verifying *which* service is on each end of a connection cryptographically, not just that the wire is encrypted.
+2. **Multi-cluster or multi-region** deployment, where mesh-level cross-cluster service discovery/routing would solve a real problem neither app-level auth nor Cilium's single-cluster encryption does.
 3. Traffic-management needs that genuinely **outgrow** what's been solved at the application layer so far (the Phase 6 canary's own precedent is that app-level solutions have handled this platform's actual needs adequately).
-4. A compliance/audit requirement specifically mandates mTLS at the network layer (distinct from the application-level bearer-token auth ADR 0001 already provides) — this would be a §3.1-adjacent Compliance-driven decision, not a purely technical one.
+4. A compliance/audit requirement specifically mandates mesh-grade mTLS (distinct from both the application-level bearer-token auth ADR 0001 provides and the CNI-level encryption above) — this would be a §3.1-adjacent Compliance-driven decision, not a purely technical one.
 
 ## Consequences
 
-- The mTLS gap ADR 0001 already flagged remains open. This is a known, accepted, documented gap — not an oversight.
-- No new infrastructure, no sidecar-injection complexity, no mesh control-plane operational burden for a cluster topology (single ephemeral `kind` cluster in CI) that couldn't meaningfully use one yet.
-- When a persistent cluster does exist, ingress-level mTLS termination (simpler, no mesh required) should be evaluated first, before a full mesh — a mesh is the heavier of the two guide §8.1 options and should only be chosen if ingress-level mTLS genuinely can't meet the need (e.g. pod-to-pod traffic within the cluster, not just at the edge).
+- The mTLS gap ADR 0001 flagged gets closed cheaply (Cilium/WireGuard) once a persistent cluster exists, without waiting on a full mesh decision — a **persistent, multi-node cluster** is still the prerequisite for either option (today there is none — see `docs/ci-cd.md`'s "no persistent staging environment" gap).
+- No mesh-level infrastructure, no sidecar-injection complexity, no mesh control-plane operational burden for needs a CNI-level encryption setting already covers.
+- Choosing Cilium as the CNI is itself a real infrastructure decision (most Kubernetes distributions ship a different default CNI) — this ADR names it as the recommended path when a persistent cluster is actually being provisioned, not something to retrofit onto an existing cluster running a different CNI without its own evaluation.

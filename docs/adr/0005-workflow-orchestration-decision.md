@@ -2,6 +2,7 @@
 
 **Status:** Accepted — not adopted, revisit criteria below
 **Date:** 2026-08-01
+**Updated 2026-08-02:** sharpened the revisit trigger (2nd multi-step saga) and pre-named the recommended engine (Temporal) after further research — no change to the core decision.
 
 ## Context
 
@@ -22,15 +23,16 @@ Standing up a workflow engine (its own database, its own worker processes, a new
 
 Do not adopt a workflow orchestration engine now. Keep the current pattern — synchronous steps where possible, durable state + scheduled timeout + dead-letter only for the genuinely async step, hand-written compensating actions — as the platform's standard saga approach.
 
-**Revisit this decision if any of these become real:**
+**Concrete revisit trigger: the platform's 2nd genuinely multi-step transactional saga.** Investment Service's subscription flow is the first; redemption (its natural mirror-image, not yet built) is the obvious candidate for the second. One saga can always be argued as a special case not worth new infrastructure for — a *second* one, independently arriving at similar durable-state/timeout/compensation needs, is the real signal that this is a recurring platform concern rather than a one-off. The broader conditions that would also justify adopting one on their own:
 
 1. A saga grows to genuinely need **multiple durable async steps** (not just one "await X" step), where a hand-rolled state machine across several timeout/dead-letter jobs starts becoming its own maintenance burden.
 2. A saga needs a **human-task queue** (e.g. a compliance officer's manual decision as a durable, resumable step with its own SLA/escalation) beyond what a simple `PENDING`-until-reviewed status field already provides (KYC/AML/Document Services' existing pattern).
 3. Operations needs **cross-saga visibility/tooling** — a dashboard of in-flight sagas, retry/replay controls, etc. — beyond what querying a service's own database directly already gives today.
-4. Redemption (Investment Service's natural next saga) or any future saga turns out to need genuinely different/more complex compensation logic that the "cancel is the full compensation" pattern can't express.
+
+**If/when adopted, the recommended engine is Temporal** — it's the best fit for a JVM/Spring Boot shop specifically because workflows are written as plain Java code (not a separate DSL/BPMN designer like Camunda, and not tied to a single cloud vendor like AWS Step Functions), which keeps the same "workflow logic lives in the codebase, reviewed like any other code" property this platform's hand-rolled sagas already have — adopting it would change *how* durability/retries/compensation are implemented, not the team's whole way of working.
 
 ## Consequences
 
 - No new infrastructure, no new SDK/runtime dependency, no new operational surface for a coordination problem that doesn't exist at this platform's current saga complexity.
-- `SubscriptionTimeoutJob`'s pattern (reuse the existing outbox relay's `@Scheduled` mechanism rather than adopting a dedicated scheduler/workflow runtime) remains the template for any future single-async-step saga.
-- If redemption or a future saga does need real orchestration-engine capability, that becomes its own ADR at that point — this decision doesn't preclude it, it just declines to build ahead of a demonstrated need.
+- `SubscriptionTimeoutJob`'s pattern (reuse the existing outbox relay's `@Scheduled` mechanism rather than adopting a dedicated scheduler/workflow runtime) remains the template for any future single-async-step saga — including redemption, unless redemption itself is the trigger that justifies Temporal.
+- If a second saga does arrive and needs real orchestration-engine capability, adopting Temporal becomes its own follow-up ADR at that point (worker deployment topology, its own Postgres-backed persistence, SDK adoption across whichever services get involved) — this decision doesn't preclude it, it just declines to build ahead of a demonstrated need and pre-names the engine so that choice doesn't need re-litigating then.
