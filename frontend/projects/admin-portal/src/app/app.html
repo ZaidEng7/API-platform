@@ -1,10 +1,20 @@
-<!--
-  Bare placeholder — Admin Portal's real shell (auth, nav, review queues)
-  is Phase C. Wiring OIDC here also needs the gateway-portal Keycloak
-  client's redirectUris/webOrigins extended for this app's own origin
-  first (see environments/environment.ts).
--->
-<div class="placeholder">
-  <h1>Admin Portal</h1>
-  <p>Coming in Phase C.</p>
-</div>
+@if (checkingAuth()) {
+  <lib-loading-spinner message="Signing you in…" />
+} @else if (!isAuthenticated()) {
+  <div class="signed-out">
+    <h1>Admin Portal</h1>
+    <p>
+      Sign in with your staff account to review compliance queues and manage subscriptions/payments.
+    </p>
+    <button mat-flat-button color="primary" (click)="login()">Sign in</button>
+  </div>
+} @else {
+  <lib-app-shell
+    appTitle="Admin Portal"
+    [navLinks]="navLinks()"
+    [userDisplayName]="userDisplayName()"
+    (logout)="logout()"
+  >
+    <router-outlet />
+  </lib-app-shell>
+}

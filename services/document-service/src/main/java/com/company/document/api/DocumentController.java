@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -30,10 +31,15 @@ import java.util.UUID;
  * document review directly feeds KYC decisions (guide: "Document Service
  * (KYC needs it)"). Uploading metadata is open to the staff roles that
  * would plausibly register one on a Party's behalf.
+ *
+ * <p>Declares {@code produces} explicitly (see Portfolio Service's
+ * controller for the full explanation): without it, springdoc documents
+ * the default wildcard media type, which breaks openapi-generator's
+ * TypeScript client (silently parses real JSON responses as a Blob).
  */
 @Tag(name = "Documents", description = "Document metadata (guide §8.3 — references only, no file bytes)")
 @RestController
-@RequestMapping("/api/v1/documents")
+@RequestMapping(value = "/api/v1/documents", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DocumentController {
 
     private final DocumentApplicationService documentApplicationService;

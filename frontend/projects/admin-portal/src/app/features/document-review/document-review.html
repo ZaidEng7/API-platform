@@ -1,0 +1,72 @@
+<h1 class="page-title">Document Review Queue</h1>
+
+@if (store.loading()) {
+  <lib-loading-spinner message="Loading documents…" />
+} @else if (store.loadError()) {
+  <lib-error-state
+    message="Couldn't load the document review queue. Please try again."
+    (retry)="reload()"
+  />
+} @else if (store.isEmpty()) {
+  <p class="empty-state">No documents found.</p>
+} @else {
+  <table class="queue-table">
+    <thead>
+      <tr>
+        <th>Customer ID</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Uploaded</th>
+        <th>Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (document of store.items(); track document.documentId) {
+        <tr>
+          <td>{{ document.customerId }}</td>
+          <td>{{ document.documentType }}</td>
+          <td>
+            <mat-chip-set>
+              <mat-chip [class]="statusClass(document.status)">{{ document.status }}</mat-chip>
+            </mat-chip-set>
+          </td>
+          <td>{{ document.uploadedAt | date: 'medium' }}</td>
+          <td>
+            @if (document.status === 'UPLOADED' && canReview()) {
+              <div class="decision-form">
+                <input
+                  type="text"
+                  class="reason-input"
+                  placeholder="Notes (required)"
+                  [(ngModel)]="notes[document.documentId!]"
+                />
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  [disabled]="
+                    !notes[document.documentId!]?.trim() || busyIds().has(document.documentId!)
+                  "
+                  (click)="verify(document.documentId!)"
+                >
+                  Verify
+                </button>
+                <button
+                  mat-stroked-button
+                  color="warn"
+                  [disabled]="
+                    !notes[document.documentId!]?.trim() || busyIds().has(document.documentId!)
+                  "
+                  (click)="reject(document.documentId!)"
+                >
+                  Reject
+                </button>
+              </div>
+            } @else if (document.status !== 'UPLOADED') {
+              <span class="decided-reason">{{ document.notes }}</span>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

@@ -1,0 +1,66 @@
+<h1 class="page-title">KYC Review Queue</h1>
+
+@if (store.loading()) {
+  <lib-loading-spinner message="Loading KYC checks…" />
+} @else if (store.loadError()) {
+  <lib-error-state
+    message="Couldn't load the KYC review queue. Please try again."
+    (retry)="reload()"
+  />
+} @else if (store.isEmpty()) {
+  <p class="empty-state">No KYC checks found.</p>
+} @else {
+  <table class="queue-table">
+    <thead>
+      <tr>
+        <th>Customer ID</th>
+        <th>Status</th>
+        <th>Requested</th>
+        <th>Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (check of store.items(); track check.checkId) {
+        <tr>
+          <td>{{ check.customerId }}</td>
+          <td>
+            <mat-chip-set>
+              <mat-chip [class]="statusClass(check.status)">{{ check.status }}</mat-chip>
+            </mat-chip-set>
+          </td>
+          <td>{{ check.requestedAt | date: 'medium' }}</td>
+          <td>
+            @if (check.status === 'PENDING' && canDecide()) {
+              <div class="decision-form">
+                <input
+                  type="text"
+                  class="reason-input"
+                  placeholder="Reason (required)"
+                  [(ngModel)]="reasons[check.checkId!]"
+                />
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  [disabled]="!reasons[check.checkId!]?.trim() || busyIds().has(check.checkId!)"
+                  (click)="decide(check.checkId!, 'APPROVED')"
+                >
+                  Approve
+                </button>
+                <button
+                  mat-stroked-button
+                  color="warn"
+                  [disabled]="!reasons[check.checkId!]?.trim() || busyIds().has(check.checkId!)"
+                  (click)="decide(check.checkId!, 'REJECTED')"
+                >
+                  Reject
+                </button>
+              </div>
+            } @else if (check.status !== 'PENDING') {
+              <span class="decided-reason">{{ check.reason }}</span>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

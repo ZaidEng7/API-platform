@@ -21,4 +21,24 @@ export class CurrentUserService {
       .pipe(map((payload: { sub?: string }) => payload?.sub ?? null)),
     { initialValue: null },
   );
+
+  /**
+   * Realm roles from the access token's `realm_access.roles` claim —
+   * lowercase, hyphenated Keycloak role names (e.g. "portfolio-manager"),
+   * NOT the `ROLE_X` Spring authority form the backend's own
+   * KeycloakRealmRoleConverter derives from the same claim server-side.
+   * Admin Portal's role-based nav and route guards read this to decide what
+   * a staff user can see, since there's no `/me` endpoint to ask the
+   * backend directly.
+   */
+  readonly roles = toSignal(
+    this.oidcSecurityService
+      .getPayloadFromAccessToken()
+      .pipe(
+        map(
+          (payload: { realm_access?: { roles?: string[] } }) => payload?.realm_access?.roles ?? [],
+        ),
+      ),
+    { initialValue: [] },
+  );
 }

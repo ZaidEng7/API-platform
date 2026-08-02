@@ -1,0 +1,71 @@
+<h1 class="page-title">Payments</h1>
+
+@if (store.loading()) {
+  <lib-loading-spinner message="Loading payments…" />
+} @else if (store.loadError()) {
+  <lib-error-state message="Couldn't load payments. Please try again." (retry)="reload()" />
+} @else if (store.isEmpty()) {
+  <p class="empty-state">No payments found.</p>
+} @else {
+  <table class="queue-table">
+    <thead>
+      <tr>
+        <th>Customer ID</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Requested</th>
+        <th>Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (payment of store.items(); track payment.transferId) {
+        <tr>
+          <td>{{ payment.customerId }}</td>
+          <td>{{ payment.amount }} {{ payment.currency }}</td>
+          <td>
+            <mat-chip-set>
+              <mat-chip [class]="statusClass(payment.status)">{{ payment.status }}</mat-chip>
+            </mat-chip-set>
+            @if (payment.status === 'FAILED' && payment.failureReason) {
+              <p class="failure-reason">{{ payment.failureReason }}</p>
+            }
+          </td>
+          <td>{{ payment.requestedAt | date: 'medium' }}</td>
+          <td>
+            @if (payment.status === 'PENDING' && canManage()) {
+              <div class="decision-form">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  [disabled]="busyIds().has(payment.transferId!)"
+                  (click)="settle(payment.transferId!)"
+                >
+                  Settle
+                </button>
+              </div>
+              <div class="decision-form">
+                <input
+                  type="text"
+                  class="reason-input"
+                  placeholder="Failure reason (required)"
+                  [(ngModel)]="failureReasons[payment.transferId!]"
+                />
+                <button
+                  mat-stroked-button
+                  color="warn"
+                  [disabled]="
+                    !failureReasons[payment.transferId!]?.trim() ||
+                    busyIds().has(payment.transferId!)
+                  "
+                  (click)="fail(payment.transferId!)"
+                >
+                  Fail
+                </button>
+              </div>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

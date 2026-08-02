@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -33,10 +34,15 @@ import java.util.UUID;
  * Service established. Role gates mirror Portfolio/Investment Service:
  * staff broad, an authenticated Investor restricted to their own
  * ({@code ownerId}) transfers on reads.
+ *
+ * <p>Declares {@code produces} explicitly (see Portfolio Service's
+ * controller for the full explanation): without it, springdoc documents
+ * the default wildcard media type, which breaks openapi-generator's
+ * TypeScript client (silently parses real JSON responses as a Blob).
  */
 @Tag(name = "Payments", description = "Payment / transfer status — interim System of Record (guide §8.3)")
 @RestController
-@RequestMapping("/api/v1/payments")
+@RequestMapping(value = "/api/v1/payments", produces = MediaType.APPLICATION_JSON_VALUE)
 public class TransferController {
 
     private static final String READ_ROLES = "hasAnyRole('OPERATIONS', 'PORTFOLIO_MANAGER', 'AUDITOR', 'COMPLIANCE', 'INVESTOR')";

@@ -1,0 +1,17 @@
+# Service-specific values for Admin Portal (Angular SPA served by Nginx —
+# frontend/Dockerfile, not the Java services' root Dockerfile). See
+# client-portal.yaml's identical rationale — no runtime env vars, Angular's
+# environment.ts is baked in at build time.
+
+nameOverride: admin-portal
+
+image:
+  repository: admin-portal
+
+service:
+  port: 80
+  targetPort: 80
+
+probes:
+  livenessPath: /
+  readinessPath: /

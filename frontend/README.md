@@ -7,8 +7,8 @@ Angular 22 multi-project workspace for the Enterprise API Platform, per
   config, HTTP interceptors, notifications, error handling, and generated API clients.
   Consumed by both portals as `shared`.
 - `projects/client-portal` — customer-facing portal (port 4200).
-- `projects/admin-portal` — internal ops/review portal (port 4201, placeholder only —
-  auth wiring deferred to Phase C, see below).
+- `projects/admin-portal` — internal ops/review portal (port 4201): role-gated queues for
+  KYC/AML/document review, subscriptions, and payments (Phase C).
 
 ## Development servers
 
@@ -39,12 +39,22 @@ npm test
 
 Both portals authenticate against Keycloak (`platform/identity`) using the Auth Code +
 PKCE flow via `angular-auth-oidc-client`, configured through `provideKeycloakAuth()` in
-`shared`. Client Portal is wired against the `gateway-portal` Keycloak client
-(registered for `http://localhost:4200/*`). **Admin Portal's own OIDC wiring is blocked**
-on registering its redirect URI (port 4201) in
-`platform/identity/realm-export.json` — either by extending `gateway-portal` or adding a
-dedicated client — this is a backend/config change, not something to work around from
-the frontend.
+`shared`. Client Portal is wired against the `gateway-portal` Keycloak client (registered
+for `http://localhost:4200/*`); Admin Portal has its own dedicated client, registered for
+`http://localhost:4201/*`.
+
+Admin Portal's role-based nav and route guards (`core/roles.ts`, `role.guard.ts`,
+`default-redirect.guard.ts`) read realm roles off `CurrentUserService.roles` (see
+`shared`'s `CurrentUserService`), sourced from the access token's `realm_access.roles`
+claim. Because that signal is built from a one-shot token read, Admin Portal's
+`app.config.ts` uses `provideAppInitializer` to block bootstrap — and therefore the
+Router's initial navigation and every guard — until `OidcSecurityService.checkAuth()`
+has fully processed the redirect callback. Without this, a route guard or component can
+read `CurrentUserService` before the callback resolves and freeze that session's
+roles/subjectId at their empty initial value for good, since the underlying Observable
+never re-emits. Client Portal doesn't need this: it has no route guards, and only reads
+`CurrentUserService` from components that render after its own `isAuthenticated()` gate
+is already true.
 
 ## Generated API clients
 
@@ -61,20 +71,36 @@ npm run codegen -- <service-name> <spec-url>   # generic, for any other service
 ```
 
 Proven end-to-end against the Gateway's own live `/v3/api-docs` (`GatewayApiClient`,
-Phase A) and, as of Phase B, against four real business services through the Gateway's
+Phase A) and, as of Phase C, against seven real business services through the Gateway's
 `/api-docs/<service>/v3/api-docs` proxy routes: `PortfolioApiClient`,
-`InvestmentApiClient`, `KycApiClient`, `AmlApiClient` — used by Client Portal's My
-Portfolio, My Subscriptions, and Compliance Status features. Generating a client for any
-of the remaining business services needs the full docker-compose stack (Postgres,
-RabbitMQ, Keycloak, and the target service) running locally first.
+`InvestmentApiClient`, `KycApiClient`, `AmlApiClient`, `DocumentApiClient`,
+`PaymentApiClient`, `ReportingApiClient` — used by Client Portal's My Portfolio, My
+Subscriptions, and Compliance Status features, and by every Admin Portal review-queue
+feature. Generating a client for any of the remaining business services (Fund, Customer,
+Audit) needs Postgres + RabbitMQ + Keycloak + the target service reachable locally first
+— there's no single docker-compose file for the whole stack yet, each service is started
+individually (`DB_*`/`RABBITMQ_*`/`<SERVICE>_JWT_ISSUER_URI` env vars, see each service's
+own `application.yml` for its defaults).
 
 Each backend `@RequestMapping` must declare `produces = MediaType.APPLICATION_JSON_VALUE`
 for its generated client to work at all — without it, springdoc documents the response
 as the default wildcard media type, and openapi-generator's TypeScript template sets
 Angular's `HttpClient` `responseType: 'blob'` instead of `'json'`, silently breaking
-response parsing even though the real runtime response is genuinely JSON. Portfolio,
-Investment, KYC, and AML Service controllers already declare this; the remaining
-business services will need the same one-line fix before their specs can be used here.
+response parsing even though the real runtime response is genuinely JSON. This bites
+_any_ controller the first time it gets a real generated-client consumer, not just
+newly-written ones — `ReportingController` and Payment Service's `TransferController`
+both still lacked it in Phase C despite predating that phase, since neither had a
+frontend consumer before then. Portfolio, Investment, KYC, AML, Document, Payment, and
+Reporting Service controllers all declare it now; Fund/Customer/Audit/Gateway-canary
+still don't (no frontend consumer yet — fix this the moment one is added, before
+debugging anything else about an empty response).
+
+If a locally-running Angular dev server's build gets stuck failing with `NG2008: Could
+not find stylesheet file` after creating a new component's `.ts`/`.scss` pair, it's a
+file-write race (Vite's watcher reacting to the `.ts` file before the co-located `.scss`
+file has actually landed on disk) — check the dev server's own log for the last
+"Application bundle generation complete" vs. "failed", and `touch` any source file in the
+same project to force a fresh rebuild attempt once both files genuinely exist.
 
 ## Resolving "my own id"
 

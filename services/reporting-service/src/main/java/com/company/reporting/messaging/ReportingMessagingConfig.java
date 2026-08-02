@@ -9,12 +9,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Binds a quorum queue to the domain-events exchange with three routing
+ * Binds a quorum queue to the domain-events exchange with several routing
  * patterns — this is the first Phase 5 business consumer of anyone else's
  * events (Audit Service's own {@code "#"} binding is a platform-wide,
- * non-business audit trail, not a business read-model). Only the three
- * domains guide §8.3's SoR matrix lists "Reporting" as a read-copy
- * destination for: Fund/NAV, Portfolio positions, Payment status.
+ * non-business audit trail, not a business read-model). Guide §8.3's SoR
+ * matrix lists "Reporting" as a read-copy destination for: Fund/NAV,
+ * Portfolio positions, Payment status — and, as of the Admin Portal's
+ * cross-customer review queues, KYC checks, AML screenings, Documents, and
+ * Subscriptions are now tracked here too.
  */
 @Configuration
 public class ReportingMessagingConfig {
@@ -41,5 +43,25 @@ public class ReportingMessagingConfig {
     @Bean
     public Binding reportingPaymentEventsBinding(Queue reportingDomainEventsQueue, TopicExchange domainEventsExchange) {
         return BindingBuilder.bind(reportingDomainEventsQueue).to(domainEventsExchange).with("payment.#");
+    }
+
+    @Bean
+    public Binding reportingKycEventsBinding(Queue reportingDomainEventsQueue, TopicExchange domainEventsExchange) {
+        return BindingBuilder.bind(reportingDomainEventsQueue).to(domainEventsExchange).with("customer.kyc.#");
+    }
+
+    @Bean
+    public Binding reportingAmlEventsBinding(Queue reportingDomainEventsQueue, TopicExchange domainEventsExchange) {
+        return BindingBuilder.bind(reportingDomainEventsQueue).to(domainEventsExchange).with("customer.aml.#");
+    }
+
+    @Bean
+    public Binding reportingDocumentEventsBinding(Queue reportingDomainEventsQueue, TopicExchange domainEventsExchange) {
+        return BindingBuilder.bind(reportingDomainEventsQueue).to(domainEventsExchange).with("customer.document.#");
+    }
+
+    @Bean
+    public Binding reportingSubscriptionEventsBinding(Queue reportingDomainEventsQueue, TopicExchange domainEventsExchange) {
+        return BindingBuilder.bind(reportingDomainEventsQueue).to(domainEventsExchange).with("investment.#");
     }
 }

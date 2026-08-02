@@ -122,7 +122,9 @@ spring:
           globalcors:
             cors-configurations:
               '[/**]':
-                allowedOrigins: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+                # Comma-separated — Spring's relaxed binding splits a single
+                # scalar into the target List<String> for CorsConfiguration.
+                allowedOrigins: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4201}
                 allowedMethods: [GET, POST, PUT, PATCH, DELETE]
                 allowedHeaders: [Authorization, Content-Type, X-Correlation-Id]
                 allowCredentials: true
