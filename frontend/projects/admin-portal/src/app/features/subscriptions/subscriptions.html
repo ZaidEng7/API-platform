@@ -1,5 +1,54 @@
 <h1 class="page-title">Subscriptions</h1>
 
+@if (canManage()) {
+  <form
+    #newSubForm
+    class="new-subscription-form"
+    (submit)="
+      $event.preventDefault();
+      createSubscription(
+        customerIdField.value,
+        ownerIdField.value,
+        portfolioIdField.value,
+        fundCodeField.value,
+        quantityField.value,
+        newSubForm
+      )
+    "
+  >
+    <h2>New Subscription</h2>
+    <div class="new-subscription-fields">
+      <mat-form-field appearance="outline">
+        <mat-label>Customer ID</mat-label>
+        <input matInput #customerIdField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Owner ID</mat-label>
+        <input matInput #ownerIdField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Portfolio ID</mat-label>
+        <input matInput #portfolioIdField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Fund Code</mat-label>
+        <input matInput #fundCodeField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Quantity</mat-label>
+        <input matInput type="number" min="0" step="any" #quantityField />
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="submit" [disabled]="creating()">
+        Create Subscription
+      </button>
+    </div>
+    <p class="form-hint">
+      Requires the customer's KYC to be APPROVED and AML to be CLEAR, and a fund/portfolio that
+      already exist — otherwise the subscription is created as FAILED with the reason shown.
+    </p>
+  </form>
+}
+
 @if (store.loading()) {
   <lib-loading-spinner message="Loading subscriptions…" />
 } @else if (store.loadError()) {

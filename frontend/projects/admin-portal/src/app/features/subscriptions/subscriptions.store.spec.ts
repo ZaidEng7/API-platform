@@ -8,6 +8,7 @@ describe('SubscriptionsStore', () => {
   let subscriptionsClient: {
     confirmPayment: ReturnType<typeof vi.fn>;
     cancel: ReturnType<typeof vi.fn>;
+    requestSubscription: ReturnType<typeof vi.fn>;
   };
 
   function subscription(
@@ -25,7 +26,11 @@ describe('SubscriptionsStore', () => {
 
   function setup() {
     reportsClient = { listSubscriptions: vi.fn() };
-    subscriptionsClient = { confirmPayment: vi.fn(), cancel: vi.fn() };
+    subscriptionsClient = {
+      confirmPayment: vi.fn(),
+      cancel: vi.fn(),
+      requestSubscription: vi.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -74,5 +79,24 @@ describe('SubscriptionsStore', () => {
     store.cancel('sub-1').subscribe();
 
     expect(subscriptionsClient.cancel).toHaveBeenCalledWith('sub-1');
+  });
+
+  it('create delegates to SubscriptionsClient with a fresh idempotency key', () => {
+    const store = setup();
+    subscriptionsClient.requestSubscription.mockReturnValue(of({ success: true }));
+    const request: InvestmentApiClient.RequestSubscriptionRequest = {
+      customerId: 'customer-1',
+      ownerId: 'owner-1',
+      portfolioId: 'portfolio-1',
+      fundCode: 'GLOBAL-EQUITY-01',
+      quantity: 25,
+    };
+
+    store.create(request).subscribe();
+
+    expect(subscriptionsClient.requestSubscription).toHaveBeenCalledWith(
+      request,
+      expect.any(String),
+    );
   });
 });

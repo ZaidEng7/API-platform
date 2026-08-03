@@ -1,3 +1,30 @@
+.new-subscription-form {
+  margin-bottom: 2rem;
+
+  h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+  }
+}
+
+.new-subscription-fields {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  mat-form-field {
+    width: 14rem;
+  }
+}
+
+.form-hint {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+  max-width: 40rem;
+}
+
 .queue-table {
   width: 100%;
   border-collapse: collapse;
