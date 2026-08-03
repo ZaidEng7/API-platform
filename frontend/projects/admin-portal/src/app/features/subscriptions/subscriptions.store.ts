@@ -38,5 +38,14 @@ export const SubscriptionsStore = signalStore(
     cancel(id: string): Observable<unknown> {
       return subscriptionsClient.cancel(id);
     },
+    /**
+     * Same `WRITE_ROLES` gate as confirm-payment/cancel. A fresh
+     * `Idempotency-Key` per submission (guide §12.3) — this is a genuinely
+     * new request each time, not a retry, so each submission gets its own
+     * key rather than reusing one across attempts.
+     */
+    create(request: InvestmentApiClient.RequestSubscriptionRequest): Observable<unknown> {
+      return subscriptionsClient.requestSubscription(request, crypto.randomUUID());
+    },
   })),
 );
