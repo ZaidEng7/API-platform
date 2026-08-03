@@ -1,5 +1,60 @@
 <h1 class="page-title">Payments</h1>
 
+@if (canCreate()) {
+  <form
+    #newPaymentForm
+    class="new-payment-form"
+    (submit)="
+      $event.preventDefault();
+      createPayment(
+        customerIdField.value,
+        ownerIdField.value,
+        amountField.value,
+        currencyField.value,
+        paymentMethodTokenField.value,
+        referenceField.value,
+        newPaymentForm
+      )
+    "
+  >
+    <h2>New Payment</h2>
+    <div class="new-payment-fields">
+      <mat-form-field appearance="outline">
+        <mat-label>Customer ID</mat-label>
+        <input matInput #customerIdField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Owner ID</mat-label>
+        <input matInput #ownerIdField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Amount</mat-label>
+        <input matInput type="number" min="0" step="any" #amountField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Currency</mat-label>
+        <input matInput #currencyField value="USD" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Payment Method Token</mat-label>
+        <input matInput #paymentMethodTokenField />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Reference (optional)</mat-label>
+        <input matInput #referenceField />
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="submit" [disabled]="creating()">
+        Request Payment
+      </button>
+    </div>
+    <p class="form-hint">
+      Requests a transfer against Payment Service directly — this is a separate step from confirming
+      a subscription's payment on the Subscriptions screen, which never creates a Payment Service
+      record on its own. Settle or fail it below once it appears as PENDING.
+    </p>
+  </form>
+}
+
 @if (store.loading()) {
   <lib-loading-spinner message="Loading payments…" />
 } @else if (store.loadError()) {
