@@ -11,7 +11,9 @@ import { withQueueEntities } from '../../core/state/queue-store-feature';
  * that already had a cross-customer list before Phase C — see roadmap.md's
  * Phase C decision); both `settle` and `fail` on Payment Service's own
  * `TransferController` are `hasRole('OPERATIONS')` only — the narrowest
- * role gate of all five queue features.
+ * role gate of all five queue features. `requestTransfer` (behind `create`
+ * below) is `WRITE_ROLES` (`operations`/`portfolio-manager`) instead —
+ * wider, same as Investment Service's `requestSubscription`.
  */
 export const PaymentsStore = signalStore(
   withQueueEntities<ReportingApiClient.PaymentTransferResponse>(),
@@ -37,6 +39,9 @@ export const PaymentsStore = signalStore(
     },
     fail(id: string, reason: string): Observable<unknown> {
       return paymentsClient.fail(id, { reason });
+    },
+    create(request: PaymentApiClient.RequestTransferRequest): Observable<unknown> {
+      return paymentsClient.requestTransfer(request, crypto.randomUUID());
     },
   })),
 );

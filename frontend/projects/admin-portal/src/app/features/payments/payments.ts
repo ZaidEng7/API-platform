@@ -3,7 +3,15 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
-import { CurrentUserService, ErrorState, LoadingSpinner, ReportingApiClient } from 'shared';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import {
+  CurrentUserService,
+  ErrorState,
+  LoadingSpinner,
+  PaymentApiClient,
+  ReportingApiClient,
+} from 'shared';
 import { PaymentsStore } from './payments.store';
 
 /**
@@ -11,11 +19,24 @@ import { PaymentsStore } from './payments.store';
  * `settle`/`fail` are both `hasRole('OPERATIONS')` only on Payment
  * Service — see payments.store.ts's Javadoc. `settle` needs no body,
  * `fail` needs a reason — same mixed shape as Document's verify/reject,
- * just narrower to one role instead of compliance.
+ * just narrower to one role instead of compliance. The "New Payment" form
+ * uses the wider `WRITE_ROLES` gate instead (`canCreate`), matching
+ * `requestTransfer` itself — it's the only real way to get a Payment
+ * Service record to exist at all, since nothing on the Subscriptions
+ * screen (confirm-payment/cancel) ever creates one automatically.
  */
 @Component({
   selector: 'app-payments',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatChipsModule, LoadingSpinner, ErrorState],
+  imports: [
+    DatePipe,
+    FormsModule,
+    MatButtonModule,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    LoadingSpinner,
+    ErrorState,
+  ],
   providers: [PaymentsStore],
   templateUrl: './payments.html',
   styleUrl: './payments.scss',
@@ -26,10 +47,58 @@ export class Payments implements OnInit {
 
   protected readonly failureReasons: Record<string, string> = {};
   protected readonly busyIds = signal<ReadonlySet<string>>(new Set());
+  protected readonly creating = signal(false);
   protected readonly canManage = () => this.currentUserService.roles().includes('operations');
+  protected readonly canCreate = () => {
+    const roles = this.currentUserService.roles();
+    return roles.includes('operations') || roles.includes('portfolio-manager');
+  };
 
   ngOnInit(): void {
     this.store.load();
+  }
+
+  protected createPayment(
+    customerId: string,
+    ownerId: string,
+    amount: string,
+    currency: string,
+    paymentMethodToken: string,
+    reference: string,
+    form: HTMLFormElement,
+  ): void {
+    if (this.creating()) {
+      return;
+    }
+    const parsedAmount = Number(amount);
+    if (
+      !customerId.trim() ||
+      !ownerId.trim() ||
+      !currency.trim() ||
+      !paymentMethodToken.trim() ||
+      !Number.isFinite(parsedAmount) ||
+      parsedAmount <= 0
+    ) {
+      return;
+    }
+
+    this.creating.set(true);
+    const request: PaymentApiClient.RequestTransferRequest = {
+      customerId: customerId.trim(),
+      ownerId: ownerId.trim(),
+      amount: parsedAmount,
+      currency: currency.trim(),
+      paymentMethodToken: paymentMethodToken.trim(),
+      ...(reference.trim() ? { reference: reference.trim() } : {}),
+    };
+    this.store.create(request).subscribe({
+      next: () => {
+        this.creating.set(false);
+        form.reset();
+        this.store.load();
+      },
+      error: () => this.creating.set(false),
+    });
   }
 
   protected reload(): void {

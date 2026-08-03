@@ -5,7 +5,11 @@ import { PaymentsStore } from './payments.store';
 
 describe('PaymentsStore', () => {
   let reportsClient: { listPayments: ReturnType<typeof vi.fn> };
-  let paymentsClient: { settle: ReturnType<typeof vi.fn>; fail: ReturnType<typeof vi.fn> };
+  let paymentsClient: {
+    settle: ReturnType<typeof vi.fn>;
+    fail: ReturnType<typeof vi.fn>;
+    requestTransfer: ReturnType<typeof vi.fn>;
+  };
 
   function payment(
     overrides: Partial<ReportingApiClient.PaymentTransferResponse>,
@@ -23,7 +27,7 @@ describe('PaymentsStore', () => {
 
   function setup() {
     reportsClient = { listPayments: vi.fn() };
-    paymentsClient = { settle: vi.fn(), fail: vi.fn() };
+    paymentsClient = { settle: vi.fn(), fail: vi.fn(), requestTransfer: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -72,5 +76,21 @@ describe('PaymentsStore', () => {
     store.fail('transfer-1', 'Card declined').subscribe();
 
     expect(paymentsClient.fail).toHaveBeenCalledWith('transfer-1', { reason: 'Card declined' });
+  });
+
+  it('create delegates to PaymentsClient with a fresh idempotency key', () => {
+    const store = setup();
+    paymentsClient.requestTransfer.mockReturnValue(of({ success: true }));
+    const request: PaymentApiClient.RequestTransferRequest = {
+      customerId: 'customer-1',
+      ownerId: 'owner-1',
+      amount: 500,
+      currency: 'USD',
+      paymentMethodToken: 'tok_test',
+    };
+
+    store.create(request).subscribe();
+
+    expect(paymentsClient.requestTransfer).toHaveBeenCalledWith(request, expect.any(String));
   });
 });
