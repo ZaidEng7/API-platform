@@ -23,7 +23,7 @@
     <spring-cloud.version>2025.1.2</spring-cloud.version>
     <!-- Matches shared/platform-bom's springdoc-openapi.version — not BOM-imported
          here since this module doesn't otherwise depend on platform-bom. -->
-    <springdoc-openapi.version>3.0.3</springdoc-openapi.version>
+    <springdoc-openapi.version>3.1.0</springdoc-openapi.version>
   </properties>
 
   <dependencyManagement>
