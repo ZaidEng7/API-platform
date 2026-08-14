@@ -21,7 +21,7 @@
   <properties>
     <java.version>21</java.version>
     <mapstruct.version>1.6.3</mapstruct.version>
-    <pact.version>4.7.3</pact.version>
+    <pact.version>4.7.5</pact.version>
     <pact.broker.url>http://localhost:9292</pact.broker.url>
   </properties>
 

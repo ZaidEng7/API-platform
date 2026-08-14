@@ -24,7 +24,7 @@
          (upstream gap: resilience4j/resilience4j#2427 — the artifact
          exists but was left out of the BOM) — explicit version instead. -->
     <resilience4j.version>2.4.0</resilience4j.version>
-    <pact.version>4.7.3</pact.version>
+    <pact.version>4.7.5</pact.version>
   </properties>
 
   <dependencyManagement>
